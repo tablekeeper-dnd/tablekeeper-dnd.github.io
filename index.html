@@ -52,7 +52,7 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:va
 .switch .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:999px;background:var(--brass);transition:transform .28s cubic-bezier(.3,.7,.2,1)}
 .switch[data-mode="player"] .thumb{transform:translateX(100%)}
 .switch[data-mode="camps"] .thumb{transform:translateX(200%)}
-.switch button{position:relative;z-index:1;padding:9px 2px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:clamp(.68rem,2.9vw,.82rem);white-space:nowrap;color:var(--muted);transition:color .2s}
+.switch button{position:relative;z-index:1;padding:9px 2px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:clamp(.66rem,2.8vw,.82rem);white-space:normal;line-height:1.15;color:var(--muted);transition:color .2s}
 .switch[data-mode="dm"] [data-m="dm"],.switch[data-mode="player"] [data-m="player"],.switch[data-mode="camps"] [data-m="camps"]{color:var(--brass-ink)}
 
 /* Campaign bar */
@@ -299,7 +299,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   <div class="brand"><h1>Table Keeper</h1><div class="brand-r"><button class="livepill" id="livepill" data-act="livepill" hidden></button><div class="save" id="save"><i></i><span>Loading</span></div></div></div>
   <div class="switch" id="switch" data-mode="player" role="tablist" aria-label="Mode">
     <div class="thumb"></div>
-    <button data-m="dm" role="tab" id="tab-dm">DM</button>
+    <button data-m="dm" role="tab" id="tab-dm">Dungeon Master</button>
     <button data-m="player" role="tab" id="tab-player">Player</button>
     <button data-m="camps" role="tab" id="tab-camps">My campaigns</button>
   </div>
