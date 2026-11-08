@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="A free D&D table app: DM screen for the whole party, your own character sheet, and a combat tracker with initiative and monsters.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Table Keeper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#14110e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Spline+Sans+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a DM's screen at the table. Sticky header with a DM/Player slide switch,
+   party cards in a responsive grid (1 col phone, 2-3 tablet), bottom sheets for edits.
+   Deliberate single dark look: low glare by candlelight, oxblood + brass. */
+:root{
+  --bg:#14110e; --surface:#1f1a15; --raised:#29221b; --line:#3d3229;
+  --ink:#ece2d2; --muted:#a8988a; --faint:#76685b;
+  --brass:#cfa65c; --brass-ink:#1b150e;
+  --blood:#c4513f; --blood-soft:#3a1d17;
+  --heal:#79b06e; --heal-soft:#1d2a1a;
+  --warn:#d9913d; --temp:#7fa9cf;
+  --f-display:"IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --f-body:"Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"Spline Sans Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:12px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.4;min-height:100%;
+  padding-left:max(12px, env(safe-area-inset-left,0px));padding-right:max(12px, env(safe-area-inset-right,0px));padding-bottom:40px;
+  -webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* Header + slide switch */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:12px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line);margin-inline:-4px;padding-inline:4px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:1.45rem;margin:0;letter-spacing:.02em;color:var(--brass)}
+.save{font-size:.78rem;color:var(--faint);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.save i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.save.ok i{background:var(--heal)} .save.busy i{background:var(--warn)}
+.switch{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;touch-action:pan-y}
+.switch .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:999px;background:var(--brass);transition:transform .28s cubic-bezier(.3,.7,.2,1)}
+.switch[data-mode="player"] .thumb{transform:translateX(100%)}
+.switch[data-mode="combat"] .thumb{transform:translateX(200%)}
+.switch button{position:relative;z-index:1;padding:9px 0;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.82rem;color:var(--muted);transition:color .2s}
+.switch[data-mode="dm"] [data-m="dm"],.switch[data-mode="player"] [data-m="player"],.switch[data-mode="combat"] [data-m="combat"]{color:var(--brass-ink)}
+
+/* Campaign bar */
+.bar{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.camp{flex:1 1 200px;min-width:0;position:relative}
+.camp select{width:100%;appearance:none;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 34px 10px 12px;font-family:var(--f-display);font-size:1.1rem}
+.camp::after{content:"";position:absolute;right:14px;top:50%;width:8px;height:8px;border-right:2px solid var(--brass);border-bottom:2px solid var(--brass);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;background:var(--raised);border:1px solid var(--line);font-weight:700;font-size:.92rem;min-height:42px}
+.btn.gold{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.btn.red{background:var(--blood);border-color:var(--blood);color:#fff}
+.btn.green{background:var(--heal);border-color:var(--heal);color:#0f170d}
+.btn.blue{background:var(--temp);border-color:var(--temp);color:#0d1620}
+.btn.ghost{background:none}
+.btn.danger{color:var(--blood);background:none;border-color:var(--blood-soft)}
+.summary{display:flex;gap:14px;flex-wrap:wrap;margin:12px 2px 0;color:var(--muted);font-size:.86rem}
+.summary b{color:var(--ink)}
+
+/* Party grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px;margin-top:12px}
+.pc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pc.down{border-color:var(--blood)}
+.pc-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pc-top>div:first-child{min-width:0}
+.pc h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.3rem;line-height:1.1;overflow-wrap:anywhere}
+.pc .sub{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+.tag{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--raised);color:var(--faint);vertical-align:middle;margin-left:4px;font-family:var(--f-body)}
+.tag.down{background:var(--blood);color:#fff}
+.shield{flex:none;width:46px;height:52px;display:grid;place-items:center;text-align:center;background:var(--raised);border:1px solid var(--line);clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);padding-bottom:8px}
+.shield small{display:block;font-size:.6rem;letter-spacing:.1em;color:var(--muted);font-weight:800}
+.shield b{display:block;font-family:var(--f-num);font-size:1.15rem;line-height:1}
+.hp{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:stretch}
+.hp .step{border-radius:10px;font-size:1.5rem;font-weight:700;min-height:48px}
+.hp .minus{background:var(--blood-soft);color:var(--blood)}
+.hp .plus{background:var(--heal-soft);color:var(--heal)}
+.hp-mid{background:var(--raised);border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:5px;text-align:left}
+.hp-line{display:flex;align-items:baseline;gap:6px}
+.hp-line b{font-family:var(--f-num);font-size:1.45rem;line-height:1}
+.hp-line span{font-family:var(--f-num);color:var(--muted);font-size:.9rem}
+.hp-line em{font-style:normal;font-family:var(--f-num);font-size:.78rem;color:var(--temp);margin-left:auto}
+.meter{height:6px;border-radius:3px;background:var(--bg);overflow:hidden;display:flex}
+.meter i{display:block;height:100%;background:var(--heal);transition:width .3s}
+.meter i.warn{background:var(--warn)} .meter i.crit{background:var(--blood)}
+.meter i.tmp{background:var(--temp)}
+.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.ab{background:var(--bg);border-radius:8px;padding:5px 0 4px;text-align:center;min-width:0}
+.ab small{display:block;font-size:.62rem;letter-spacing:.08em;font-weight:800;color:var(--muted)}
+.ab b{display:block;font-family:var(--f-num);font-size:.98rem}
+.ab span{display:block;font-family:var(--f-num);font-size:.72rem;color:var(--faint)}
+.mini{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.mini b{color:var(--ink);font-family:var(--f-num);font-weight:600}
+.conds{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:.76rem;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--blood-soft);color:#f0a597;border:1px solid transparent}
+.slots{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.slot-row{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center}
+.slot-l{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.pips{display:flex;flex-wrap:wrap;gap:6px}
+.pip{width:24px;height:24px;border-radius:50%;border:2px solid var(--brass);background:var(--brass);transition:background .15s}
+.pip.spent{background:transparent;border-color:var(--faint)}
+.slot-n{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.srow{display:grid;grid-template-columns:44px auto 36px auto;gap:10px;align-items:center;justify-content:start}
+.srow b{font-family:var(--f-num);min-width:22px;text-align:center}
+.items{border-top:1px dashed var(--line);padding-top:8px}
+.spells{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:5px}
+.spells .count{font-size:.8rem;color:var(--muted)}
+.spells .count b{font-family:var(--f-num);color:var(--ink);font-weight:600}
+.spells .count b.short{color:var(--warn)}
+.sp-l{display:grid;grid-template-columns:48px 1fr;gap:8px;font-size:.92rem}
+.sp-l span:first-child{font-family:var(--f-num);font-size:.76rem;color:var(--muted);padding-top:2px}
+.sp-l span:last-child{min-width:0;overflow-wrap:anywhere}
+.picks{display:flex;flex-direction:column;gap:6px}
+.pick{display:grid;grid-template-columns:1fr 36px;gap:6px}
+.pick select{min-width:0}
+.items-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.lbl{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.items ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.items li{display:flex;justify-content:space-between;gap:8px;font-size:.92rem;min-width:0}
+.items li span:first-child{overflow-wrap:anywhere;min-width:0}
+.items li .q{font-family:var(--f-num);color:var(--muted);flex:none}
+.items .none{color:var(--faint);font-style:italic;font-size:.88rem}
+.linkbtn{color:var(--brass);font-weight:700;font-size:.86rem;padding:6px 2px}
+.pc-foot{display:flex;gap:8px}
+.pc-foot .btn{flex:1;min-height:38px;padding:7px 10px;font-size:.86rem}
+
+.empty{margin-top:24px;padding:28px 18px;border:1px dashed var(--line);border-radius:var(--r);text-align:center;color:var(--muted)}
+.empty h2{font-family:var(--f-display);font-weight:400;color:var(--ink);margin:0 0 6px;font-size:1.4rem}
+.empty .btn{margin-top:12px}
+
+/* Player sheet */
+.me{display:flex;flex-direction:column;gap:14px;margin-top:14px;max-width:720px;margin-inline:auto}
+.me-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.me-head h2{font-family:var(--f-display);font-weight:400;font-size:2rem;margin:0;line-height:1.05;overflow-wrap:anywhere}
+.me-head .sub{color:var(--muted);margin:4px 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.big-hp .hp{grid-template-columns:58px 1fr 58px}
+.big-hp .hp-line b{font-size:2.2rem}
+.abil-big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.abil-big button{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center}
+.abil-big small{display:block;font-size:.7rem;letter-spacing:.1em;font-weight:800;color:var(--muted)}
+.abil-big b{display:block;font-family:var(--f-num);font-size:1.6rem;line-height:1.1}
+.abil-big span{display:block;font-family:var(--f-num);color:var(--brass);font-size:.85rem}
+.hint{color:var(--faint);font-size:.8rem;margin:0}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--raised);border-radius:10px;padding:8px;text-align:center}
+.stat small{display:block;font-size:.66rem;letter-spacing:.1em;font-weight:800;color:var(--muted)}
+.stat b{font-family:var(--f-num);font-size:1.3rem}
+.inv-add{display:flex;gap:8px}
+.inv-add input{flex:1;min-width:0}
+textarea.notes{min-height:110px;resize:vertical}
+
+/* Fields */
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=number],textarea,select.plain{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-width:0}
+input[type=number]{font-family:var(--f-num)}
+.row{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+.row6{display:grid;gap:6px;grid-template-columns:repeat(6,1fr)}
+.row6 input{text-align:center;padding:8px 2px}
+select.plain{appearance:auto;padding:9px 8px}
+.autobox{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.chk{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.chk input{width:18px;height:18px;accent-color:var(--brass)}
+.togs{display:flex;flex-wrap:wrap;gap:6px}
+.tog{padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:.84rem;font-weight:700;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--blood-soft);border-color:var(--blood);color:#f0a597}
+.ilist{display:flex;flex-direction:column;gap:6px}
+.irow{display:grid;grid-template-columns:1fr auto auto auto auto;gap:6px;align-items:center}
+.irow input{min-width:0}
+.irow .q{font-family:var(--f-num);min-width:26px;text-align:center}
+.sq{width:36px;height:36px;border-radius:8px;background:var(--raised);border:1px solid var(--line);font-weight:700}
+.sq.x{color:var(--blood)}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,4,3,.66);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-height:88vh;overflow:auto;background:var(--surface);border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+  padding:8px max(16px, env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px));
+  transform:translateY(105%);transition:transform .26s cubic-bezier(.3,.7,.2,1);max-width:640px;margin-inline:auto}
+.sheet.on{transform:none}
+.grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.sheet h2{font-family:var(--f-display);font-weight:400;margin:0 0 12px;font-size:1.5rem}
+.stack{display:flex;flex-direction:column;gap:14px}
+.pad-in{font-family:var(--f-num);font-size:2rem;text-align:center;padding:10px}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{flex:1;min-width:52px;padding:9px 0;border-radius:9px;background:var(--raised);border:1px solid var(--line);font-family:var(--f-num)}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);z-index:50;background:var(--raised);border:1px solid var(--brass);border-radius:14px;padding:10px 16px;display:flex;gap:12px;align-items:center;transition:transform .25s;max-width:calc(100% - 32px)}
+.toast.on{transform:translate(-50%,0)}
+.toast b{font-family:var(--f-num);font-size:1.8rem;color:var(--brass);line-height:1}
+.toast span{font-size:.88rem;color:var(--muted)}
+.toast .crit{color:var(--heal)} .toast .fumble{color:var(--blood)}
+
+/* Combat */
+body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.cbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.cbar .btn{flex:1 1 auto}
+.clist{display:flex;flex-direction:column;gap:10px;margin-top:12px;max-width:760px;margin-inline:auto}
+.cb{display:grid;grid-template-columns:52px 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;min-width:0}
+.cb.cur{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.cb.dead{opacity:.5}
+.cb.dead .hp-line b{text-decoration:line-through}
+.init{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;background:var(--raised);border:1px solid var(--line);min-height:58px}
+.cb.cur .init{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.init small{font-size:.58rem;letter-spacing:.1em;font-weight:800;opacity:.75}
+.init b{font-family:var(--f-num);font-size:1.35rem;line-height:1.1}
+.cb-main{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cb-name{min-width:0;text-align:left;padding:0}
+.cb-name b{font-family:var(--f-display);font-weight:400;font-size:1.2rem;line-height:1.1;overflow-wrap:anywhere}
+.kind{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle;font-family:var(--f-body)}
+.kind.p{background:#1f2a35;color:var(--temp)} .kind.m{background:var(--blood-soft);color:#f0a597}
+.cb-ac{flex:none;font-size:.78rem;color:var(--muted);background:var(--raised);border-radius:8px;padding:4px 8px}
+.cb-ac b{font-family:var(--f-num);color:var(--ink);font-size:1rem}
+.atk{font-size:.84rem;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.cb-acts{display:flex;gap:6px;flex-wrap:wrap}
+.cb-acts .btn{min-height:34px;padding:6px 10px;font-size:.82rem}
+.turnbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(12px, env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px, env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.turnbar .now{text-align:center;min-width:0}
+.turnbar .now small{display:block;font-size:.68rem;letter-spacing:.1em;font-weight:800;color:var(--muted);text-transform:uppercase}
+.turnbar .now b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.turnbar .btn{min-width:84px;min-height:48px}
+.mon-prev{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.mon-prev .mini b{font-size:.95rem}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper b{font-family:var(--f-num);font-size:1.3rem;min-width:28px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Table Keeper</h1><div class="save" id="save"><i></i><span>Loading</span></div></div>
+  <div class="switch" id="switch" data-mode="dm" role="tablist" aria-label="Mode">
+    <div class="thumb"></div>
+    <button data-m="dm" role="tab" id="tab-dm">DM</button>
+    <button data-m="player" role="tab" id="tab-player">Player</button>
+    <button data-m="combat" role="tab" id="tab-combat">Combat</button>
+  </div>
+</header>
+<main id="main"></main>
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grip"></div><div id="sheetBody"></div></section>
+<nav class="turnbar" id="turnbar" hidden></nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+const ABIL=["str","dex","con","int","wis","cha"];
+const CONDS=["Blinded","Charmed","Deafened","Exhaustion","Frightened","Grappled","Incapacitated","Invisible","Paralysed","Petrified","Poisoned","Prone","Restrained","Stunned","Unconscious","Concentrating","Inspired"];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mod=s=>Math.floor(((+s||10)-10)/2);
+const sg=n=>(n>=0?"+":"")+n;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+
+function P(o){return Object.assign({id:uid(),name:"New hero",race:"",cls:"",lvl:1,ac:10,hp:10,max:10,temp:0,speed:30,
+  abil:{str:10,dex:10,con:10,int:10,wis:10,cha:10},conds:[],items:[],gold:0,notes:"",ex:false,slots:null},o)}
+function SL(...m){return Array.from({length:9},(_,i)=>({max:m[i]||0,used:0}))}
+function it(n,q){return{id:uid(),n,q:q||1}}
+
+/* Fresh install: no campaigns or characters until the person creates them. */
+function defaults(){
+  return {core:{mode:"dm",active:null,camps:[],myMonsters:[]},camps:{},me:null,combat:{round:1,cur:null,list:[]}};
+}
+function normalise(){
+  S.core.camps=S.core.camps||[];S.core.myMonsters=S.core.myMonsters||[];S.camps=S.camps||{};
+  if(!S.combat)S.combat={round:1,cur:null,list:[]};
+  if(S.core.active&&!S.core.camps.some(c=>c.id===S.core.active))S.core.active=null;
+  if(!S.core.active&&S.core.camps.length)S.core.active=S.core.camps[0].id;
+}
+
+let S=defaults();
+const LS="tablekeeper.v1";
+try{const c=JSON.parse(localStorage.getItem(LS)||"null");if(c&&c.core)S=c;}catch(e){}
+normalise();
+function cache(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+
+/* ---------- Saving (private store, falls back to this device) ---------- */
+let db=null,col=null,online=false;
+const pending=new Map(),timers=new Map(),writing=new Set();
+const saveEl=document.getElementById("save");
+function setSave(cls,txt){saveEl.className="save "+cls;saveEl.lastElementChild.textContent=txt}
+function docData(key){
+  if(key==="core")return {json:JSON.stringify(S.core)};
+  if(key==="me")return {json:JSON.stringify(S.me)};
+  if(key==="combat")return {json:JSON.stringify(S.combat)};
+  const id=key.slice(5);return {json:JSON.stringify(S.camps[id]||{players:[]})};
+}
+function commit(key){
+  cache();
+  if(!online){setSave("", "Saved on this device");return}
+  pending.set(key,true);setSave("busy","Saving");
+  clearTimeout(timers.get(key));
+  timers.set(key,setTimeout(()=>flush(key),700));
+}
+async function flush(key){
+  if(writing.has(key)){timers.set(key,setTimeout(()=>flush(key),400));return}
+  if(!pending.get(key))return;
+  pending.delete(key);writing.add(key);
+  try{await col.doc(key).set(docData(key))}catch(e){setSave("","Save failed, kept on phone");writing.delete(key);return}
+  writing.delete(key);
+  if(!pending.size&&!writing.size)setSave("ok","Saved");
+}
+function campKey(){return "camp_"+S.core.active}
+
+async function connect(){
+  if(!window.claude||!window.claude.use){setSave("","Saved on this device");return}
+  const loading=setTimeout(()=>{if(!online)setSave("","Saved on this device")},10000);
+  try{
+    const [d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    if(!d||!u){clearTimeout(loading);setSave("","Saved on this device");return}
+    const id=await u.id();
+    if(!id){clearTimeout(loading);setSave("","Saved on this device");return}
+    db=d;col=db.collection("data/users/"+id);
+    const core=await col.doc("core").get();
+    clearTimeout(loading);
+    online=true;
+    if(!core.exists){
+      // First run: upload what's on this phone
+      await col.doc("core").set(docData("core"));
+      await col.doc("me").set(docData("me"));
+      await col.doc("combat").set(docData("combat"));
+      for(const c of S.core.camps){await col.doc("camp_"+c.id).set(docData("camp_"+c.id))}
+      setSave("ok","Saved");return;
+    }
+    const next={core:JSON.parse(core.data().json),camps:{},me:S.me,combat:S.combat};
+    const me=await col.doc("me").get();if(me.exists)next.me=JSON.parse(me.data().json);
+    const cb=await col.doc("combat").get();if(cb.exists)next.combat=JSON.parse(cb.data().json);
+    for(const c of next.core.camps){
+      const s=await col.doc("camp_"+c.id).get();
+      next.camps[c.id]=s.exists?JSON.parse(s.data().json):{players:[]};
+    }
+    S=next;normalise();cache();render();setSave("ok","Saved");
+  }catch(e){clearTimeout(loading);online=false;setSave("","Saved on this device")}
+}
+
+/* ---------- Helpers ---------- */
+const camp=()=>S.core.active?(S.camps[S.core.active]||(S.camps[S.core.active]={players:[]})):{players:[]};
+function findPlayer(id){for(const k in S.camps){const p=S.camps[k].players.find(p=>p.id===id);if(p)return{p,k}}return null}
+function findP(id){if(id==="me")return S.me;const f=findPlayer(id);if(f)return f.p;return S.combat.list.find(e=>e.kind==="m"&&e.id===id)}
+function keyFor(id){if(id==="me")return"me";const f=findPlayer(id);if(f)return"camp_"+f.k;return"combat"}
+function hpState(p){if(p.hp<=0)return"down";const r=p.hp/Math.max(1,p.max);return r>.5?"ok":r>.25?"warn":"crit"}
+function meter(p){
+  const tot=Math.max(p.max,p.hp+p.temp);
+  const w=clamp(p.hp/tot*100,0,100),t=clamp(p.temp/tot*100,0,100),st=hpState(p);
+  return `<div class="meter"><i class="${st==="ok"?"":st==="warn"?"warn":"crit"}" style="width:${w}%"></i>${p.temp?`<i class="tmp" style="width:${t}%"></i>`:""}</div>`;
+}
+function hpBlock(p){
+  return `<div class="hp">
+    <button class="step minus" data-act="dmg1" data-id="${p.id}" aria-label="Lose 1 HP">−</button>
+    <button class="hp-mid" data-act="pad" data-id="${p.id}" aria-label="Change HP">
+      <span class="hp-line"><b>${p.hp}</b><span>/ ${p.max}</span>${p.temp?`<em>+${p.temp} temp</em>`:""}</span>${meter(p)}
+    </button>
+    <button class="step plus" data-act="heal1" data-id="${p.id}" aria-label="Gain 1 HP">+</button></div>`;
+}
+const subline=p=>[p.race,p.cls].filter(Boolean).join(" ")+(p.lvl?` · Lv ${p.lvl}`:"");
+const pp=p=>10+mod(p.abil.wis);
+const ORD=["1st","2nd","3rd","4th","5th","6th","7th","8th","9th"];
+function slotsOf(p){if(!Array.isArray(p.slots)||p.slots.length!==9)p.slots=Array.from({length:9},()=>({max:0,used:0}));return p.slots}
+function restoreSlots(p){slotsOf(p).forEach(s=>s.used=0)}
+function slotBlock(p){
+  const sl=slotsOf(p),rows=sl.map((s,i)=>({s,i})).filter(x=>x.s.max>0);
+  return `<div class="slots"><div class="items-h"><span class="lbl">Spell slots</span><button class="linkbtn" data-act="slots" data-id="${p.id}">Edit slots</button></div>
+    ${rows.length?rows.map(({s,i})=>{const av=s.max-s.used;
+      return `<div class="slot-row"><span class="slot-l">${ORD[i]}</span><div class="pips">${Array.from({length:s.max},(_,k)=>`<button class="pip${k<av?"":" spent"}" data-act="pip" data-id="${p.id}" data-lv="${i}" data-on="${k<av?1:0}" aria-label="${ORD[i]} level slot ${k<av?"available, tap to use":"used, tap to restore"}"></button>`).join("")}</div><span class="slot-n">${av}/${s.max}</span></div>`}).join("")
+      :`<p class="none" style="margin:0;color:var(--faint);font-style:italic;font-size:.88rem">No spell slots</p>`}</div>`;
+}
+
+/* ---------- Render ---------- */
+const main=document.getElementById("main");
+function render(){
+  const sw=document.getElementById("switch");sw.dataset.mode=S.core.mode;
+  document.getElementById("tab-dm").setAttribute("aria-selected",S.core.mode==="dm");
+  document.getElementById("tab-player").setAttribute("aria-selected",S.core.mode==="player");
+  document.getElementById("tab-combat").setAttribute("aria-selected",S.core.mode==="combat");
+  document.body.classList.toggle("in-combat",S.core.mode==="combat");
+  main.innerHTML=S.core.mode==="dm"?renderDM():S.core.mode==="player"?renderMe():renderCombat();
+  renderTurnbar();
+}
+function renderDM(){
+  if(!S.core.camps.length)return `<div class="empty"><h2>Start a campaign</h2><p>Create a campaign, then add each player at your table to see their HP, stats, spells and kit on one screen.</p><button class="btn gold" data-act="newCamp">+ Create campaign</button></div>`;
+  const ps=camp().players;
+  const opts=S.core.camps.map(c=>`<option value="${c.id}"${c.id===S.core.active?" selected":""}>${esc(c.name)}</option>`).join("")+`<option value="__new">+ New campaign…</option>`;
+  const down=ps.filter(p=>p.hp<=0).length,totHp=ps.reduce((a,p)=>a+p.hp,0),totMax=ps.reduce((a,p)=>a+p.max,0);
+  let h=`<div class="bar"><div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>
+    <button class="btn" data-act="campEdit">Campaign</button><button class="btn gold" data-act="add">+ Player</button></div>`;
+  if(!ps.length){
+    return h+`<div class="empty"><h2>No players yet</h2><p>Add each hero at the table to see their HP, stats and kit on one screen.</p><button class="btn gold" data-act="add">+ Add first player</button></div>`;
+  }
+  h+=`<div class="summary"><span><b class="num">${ps.length}</b> heroes</span><span>Party HP <b class="num">${totHp}/${totMax}</b></span>${down?`<span style="color:var(--blood)"><b class="num" style="color:var(--blood)">${down}</b> down</span>`:""}<button class="linkbtn" data-act="longrest">Long rest all</button></div>`;
+  h+=`<div class="grid">`+ps.map(card).join("")+`</div>`;
+  return h;
+}
+function card(p){
+  const st=hpState(p);
+  return `<article class="pc${st==="down"?" down":""}">
+    <div class="pc-top"><div><h3>${esc(p.name)}${p.ex?`<span class="tag">Example</span>`:""}${st==="down"?`<span class="tag down">Down</span>`:""}</h3><p class="sub">${esc(subline(p))}</p></div>
+      <div class="shield" title="Armour class"><div><small>AC</small><b>${p.ac}</b></div></div></div>
+    ${hpBlock(p)}
+    <div class="abil">${ABIL.map(a=>`<div class="ab"><small>${a.toUpperCase()}</small><b>${p.abil[a]}</b><span>${sg(mod(p.abil[a]))}</span></div>`).join("")}</div>
+    <div class="mini"><span>Speed <b>${p.speed}</b></span><span>Passive Perc <b>${pp(p)}</b></span><span>Gold <b>${p.gold}</b></span></div>
+    ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+    ${slotBlock(p)}
+    <div class="items"><div class="items-h"><span class="lbl">Carrying</span><button class="linkbtn" data-act="items" data-id="${p.id}">Edit items</button></div>
+      ${p.items.length?`<ul>${p.items.map(i=>`<li><span>${esc(i.n)}</span>${i.q>1?`<span class="q">×${i.q}</span>`:""}</li>`).join("")}</ul>`:`<p class="none" style="margin:0">Nothing carried</p>`}</div>
+    ${spellBlock(p)}
+    <div class="pc-foot"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button><button class="btn" data-act="edit" data-id="${p.id}">Edit stats</button></div>
+  </article>`;
+}
+function renderMe(){
+  const p=S.me;
+  if(!p)return `<div class="empty"><h2>Your character</h2><p>Make a sheet for the character you play. Pick a class, race and level and the stats fill themselves in.</p><button class="btn gold" data-act="newMe">+ Create character</button></div>`;
+  return `<div class="me">
+    <div class="me-head"><div><h2>${esc(p.name)}${p.ex?`<span class="tag">Example</span>`:""}</h2><p class="sub">${esc(subline(p))}</p></div>
+      <button class="btn" data-act="edit" data-id="me">Edit</button></div>
+    <div class="panel big-hp"><span class="lbl">Hit points</span>${hpBlock(p)}
+      ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+      <div class="foot"><button class="btn" data-act="conds" data-id="me">Conditions</button><button class="btn" data-act="rest" data-id="me">Long rest</button></div></div>
+    <div class="stats3"><div class="stat"><small>AC</small><b>${p.ac}</b></div><div class="stat"><small>SPEED</small><b>${p.speed}</b></div><div class="stat"><small>PASSIVE PERC</small><b>${pp(p)}</b></div></div>
+    <div class="panel">${slotBlock(p).replace('class="slots"','class="slots" style="border:0;padding:0"')}</div>
+    <div class="panel"><span class="lbl">Abilities</span>
+      <div class="abil-big">${ABIL.map(a=>`<button data-act="roll" data-a="${a}"><small>${a.toUpperCase()}</small><b>${p.abil[a]}</b><span>${sg(mod(p.abil[a]))}</span></button>`).join("")}</div>
+      <p class="hint">Tap an ability to roll a check.</p></div>
+    <div class="panel"><div class="items-h"><span class="lbl">Inventory</span><span class="mini">Gold <b>${p.gold}</b></span></div>
+      ${p.items.length?`<div class="ilist">${p.items.map(i=>irow(i,"me")).join("")}</div>`:`<p class="none" style="margin:0;color:var(--faint)">Nothing carried</p>`}
+      <form class="inv-add" data-form="additem" data-id="me"><input type="text" id="me-newitem" placeholder="Add an item" aria-label="New item"><button class="btn gold">Add</button></form></div>
+    <div class="panel">${spellBlock(p).replace('class="spells"','class="spells" style="border:0;padding:0"')}</div>
+    <div class="panel"><label class="lbl" for="me-notes">Notes</label><textarea class="notes" id="me-notes" data-notes="me" placeholder="Spells, features, backstory, what happened last session">${esc(p.notes)}</textarea></div>
+  </div>`;
+}
+function irow(i,pid){
+  return `<div class="irow" data-item="${i.id}" data-id="${pid}"><input type="text" value="${esc(i.n)}" data-iname aria-label="Item name">
+    <button class="sq" data-act="iq-" aria-label="Fewer">−</button><span class="q">${i.q}</span><button class="sq" data-act="iq+" aria-label="More">+</button>
+    <button class="sq x" data-act="idel" aria-label="Remove item">×</button></div>`;
+}
+
+/* ---------- Sheet ---------- */
+const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim"),sb=document.getElementById("sheetBody");
+let onClose=null;
+function openSheet(html,after){sb.innerHTML=html;sheet.classList.add("on");scrim.classList.add("on");if(after)after(sb)}
+function closeSheet(){sheet.classList.remove("on");scrim.classList.remove("on");if(onClose){const f=onClose;onClose=null;f()}render()}
+scrim.addEventListener("click",closeSheet);
+
+function padSheet(p){
+  openSheet(`<h2>${esc(p.name)}</h2><div class="stack">
+    <p class="sub" style="margin:0;color:var(--muted)">HP <b class="num" style="color:var(--ink)">${p.hp} / ${p.max}</b>${p.temp?` · temp <b class="num" style="color:var(--temp)">${p.temp}</b>`:""}</p>
+    <input type="number" inputmode="numeric" id="padIn" class="pad-in" placeholder="0" aria-label="Amount">
+    <div class="quick">${[1,2,5,10,20].map(n=>`<button data-q="${n}">${n}</button>`).join("")}</div>
+    <div class="acts"><button class="btn red" data-pad="dmg">Damage</button><button class="btn green" data-pad="heal">Heal</button><button class="btn blue" data-pad="temp">Temp HP</button></div>
+    <div class="foot"><button class="btn ghost" data-pad="full">Full HP</button><button class="btn ghost" data-pad="close">Done</button></div></div>`,b=>{
+      const inp=b.querySelector("#padIn");setTimeout(()=>inp.focus(),250);
+      b.querySelectorAll("[data-q]").forEach(x=>x.onclick=()=>{inp.value=x.dataset.q});
+      b.querySelectorAll("[data-pad]").forEach(x=>x.onclick=()=>{
+        const n=Math.abs(parseInt(inp.value,10)||0),k=x.dataset.pad;
+        if(k==="close")return closeSheet();
+        if(k==="full"){p.hp=p.max;p.conds=p.conds.filter(c=>c!=="Unconscious")}
+        else if(!n){inp.focus();return}
+        else if(k==="dmg")damage(p,n);
+        else if(k==="heal")heal(p,n);
+        else if(k==="temp")p.temp=Math.max(p.temp,n);
+        commit(keyFor(p.id));closeSheet();
+      });
+    });
+}
+function damage(p,n){const t=Math.min(p.temp,n);p.temp-=t;n-=t;p.hp=Math.max(0,p.hp-n);if(p.hp===0&&p.kind!=="m"&&!p.conds.includes("Unconscious"))p.conds.push("Unconscious")}
+function heal(p,n){const was=p.hp;p.hp=Math.min(p.max,p.hp+n);if(was===0&&p.hp>0)p.conds=p.conds.filter(c=>c!=="Unconscious")}
+
+function condSheet(p){
+  openSheet(`<h2>${esc(p.name)}: conditions</h2><div class="togs">${CONDS.map(c=>`<button class="tog" aria-pressed="${p.conds.includes(c)}" data-c="${c}">${c}</button>`).join("")}</div>
+    <div class="foot" style="margin-top:16px"><button class="btn ghost" data-x="clear">Clear all</button><button class="btn gold" data-x="done">Done</button></div>`,b=>{
+    b.querySelectorAll("[data-c]").forEach(x=>x.onclick=()=>{const c=x.dataset.c,i=p.conds.indexOf(c);if(i>=0)p.conds.splice(i,1);else p.conds.push(c);x.setAttribute("aria-pressed",i<0);commit(keyFor(p.id))});
+    b.querySelector('[data-x="clear"]').onclick=()=>{p.conds=[];commit(keyFor(p.id));closeSheet()};
+    b.querySelector('[data-x="done"]').onclick=closeSheet;
+  });
+}
+function itemsSheet(p){
+  const draw=()=>`<h2>${esc(p.name)}: items</h2><div class="stack">
+      <div class="ilist" id="ilist">${p.items.map(i=>irow(i,p.id)).join("")||`<p class="none" style="margin:0;color:var(--faint)">Nothing carried</p>`}</div>
+      <form class="inv-add" data-form="additem" data-id="${p.id}"><input type="text" id="sheet-newitem" placeholder="Add an item" aria-label="New item"><button class="btn gold">Add</button></form>
+      <div class="f"><label for="sheet-gold">Gold</label><input type="number" inputmode="numeric" id="sheet-gold" value="${p.gold}"></div>
+      <div class="foot"><span></span><button class="btn gold" data-x="done">Done</button></div></div>`;
+  openSheet(draw(),b=>{
+    b.querySelector("#sheet-gold").onchange=e=>{p.gold=+e.target.value||0;commit(keyFor(p.id))};
+    b.querySelector('[data-x="done"]').onclick=closeSheet;
+  });
+}
+function slotSheet(p){
+  const sl=slotsOf(p);
+  openSheet(`<h2>${esc(p.name)}: spell slots</h2><div class="stack">
+    <p class="hint" style="margin:0">Set how many slots of each level they have.</p>
+    ${sl.map((s,i)=>`<div class="srow"><span class="slot-l">${ORD[i]}</span><button class="sq" data-sl="${i}" data-d="-1" aria-label="Fewer ${ORD[i]} level slots">−</button><b id="slmax${i}">${s.max}</b><button class="sq" data-sl="${i}" data-d="1" aria-label="More ${ORD[i]} level slots">+</button></div>`).join("")}
+    <div class="foot"><button class="btn ghost" data-x="restore">Restore all slots</button><button class="btn gold" data-x="done">Done</button></div></div>`,b=>{
+    b.querySelectorAll("[data-sl]").forEach(x=>x.onclick=()=>{const s=sl[+x.dataset.sl];s.max=clamp(s.max+(+x.dataset.d),0,9);s.used=Math.min(s.used,s.max);
+      b.querySelector("#slmax"+x.dataset.sl).textContent=s.max;commit(keyFor(p.id))});
+    b.querySelector('[data-x="restore"]').onclick=()=>{restoreSlots(p);commit(keyFor(p.id));closeSheet()};
+    b.querySelector('[data-x="done"]').onclick=closeSheet;
+  });
+}
+/* ---------- Class rules (2014 Player's Handbook / SRD 5.1) ---------- */
+// pri: standard array order (15,14,13,12,10,8). cast: full | half | halfup (artificer) | pact | none
+const CLASSES={
+  Artificer:{hd:8,pri:["int","con","dex","wis","str","cha"],cast:"halfup",ac:"studded",asi:[4,8,12,16,19],
+    kit:[["Light crossbow"],["Bolts",20],["Dagger",2],["Studded leather armour"],["Thieves' tools"],["Dungeoneer's pack"]]},
+  Barbarian:{hd:12,pri:["str","con","dex","wis","cha","int"],cast:"none",ac:"barb",asi:[4,8,12,16,19],
+    kit:[["Greataxe"],["Handaxe",2],["Javelin",4],["Explorer's pack"]]},
+  Bard:{hd:8,pri:["cha","dex","con","wis","int","str"],cast:"full",ac:"leather",asi:[4,8,12,16,19],
+    kit:[["Rapier"],["Dagger"],["Leather armour"],["Lute"],["Entertainer's pack"]]},
+  Cleric:{hd:8,pri:["wis","con","dex","str","cha","int"],cast:"full",ac:"scale+shield",asi:[4,8,12,16,19],
+    kit:[["Mace"],["Scale mail"],["Shield"],["Light crossbow"],["Bolts",20],["Holy symbol"],["Priest's pack"]]},
+  Druid:{hd:8,pri:["wis","con","dex","int","cha","str"],cast:"full",ac:"leather+shield",asi:[4,8,12,16,19],
+    kit:[["Scimitar"],["Wooden shield"],["Leather armour"],["Druidic focus"],["Explorer's pack"]]},
+  Fighter:{hd:10,pri:["str","con","dex","wis","cha","int"],cast:"none",ac:"chain+shield",asi:[4,6,8,12,14,16,19],
+    kit:[["Longsword"],["Shield"],["Chain mail"],["Light crossbow"],["Bolts",20],["Dungeoneer's pack"]]},
+  Monk:{hd:8,pri:["dex","wis","con","str","int","cha"],cast:"none",ac:"monk",asi:[4,8,12,16,19],
+    kit:[["Shortsword"],["Dart",10],["Explorer's pack"]]},
+  Paladin:{hd:10,pri:["str","cha","con","wis","dex","int"],cast:"half",ac:"chain+shield",asi:[4,8,12,16,19],
+    kit:[["Longsword"],["Shield"],["Javelin",5],["Chain mail"],["Holy symbol"],["Priest's pack"]]},
+  Ranger:{hd:10,pri:["dex","wis","con","str","int","cha"],cast:"half",ac:"scale",asi:[4,8,12,16,19],
+    kit:[["Longbow"],["Arrows",20],["Shortsword",2],["Scale mail"],["Explorer's pack"]]},
+  Rogue:{hd:8,pri:["dex","con","wis","cha","int","str"],cast:"none",ac:"leather",asi:[4,8,10,12,16,19],
+    kit:[["Rapier"],["Shortbow"],["Arrows",20],["Dagger",2],["Leather armour"],["Thieves' tools"],["Burglar's pack"]]},
+  Sorcerer:{hd:6,pri:["cha","con","dex","wis","int","str"],cast:"full",ac:"none",asi:[4,8,12,16,19],
+    kit:[["Light crossbow"],["Bolts",20],["Dagger",2],["Arcane focus"],["Dungeoneer's pack"]]},
+  Warlock:{hd:8,pri:["cha","con","dex","wis","int","str"],cast:"pact",ac:"leather",asi:[4,8,12,16,19],
+    kit:[["Light crossbow"],["Bolts",20],["Dagger",2],["Leather armour"],["Arcane focus"],["Scholar's pack"]]},
+  Wizard:{hd:6,pri:["int","con","dex","wis","cha","str"],cast:"full",ac:"none",asi:[4,8,12,16,19],
+    kit:[["Quarterstaff"],["Spellbook"],["Arcane focus"],["Scholar's pack"]]}
+};
+// Ability bonuses and speed. "flex" = +1 to that many of the class's top abilities not already raised.
+const RACES={
+  Aasimar:{b:{cha:2,wis:1},sp:30}, Dragonborn:{b:{str:2,cha:1},sp:30}, Dwarf:{b:{con:2},sp:25},
+  Elf:{b:{dex:2},sp:30}, "Wood Elf":{b:{dex:2,wis:1},sp:35}, Gnome:{b:{int:2},sp:25}, Goliath:{b:{str:2,con:1},sp:30},
+  "Half-Elf":{b:{cha:2},flex:2,sp:30}, "Half-Orc":{b:{str:2,con:1},sp:30}, Halfling:{b:{dex:2},sp:25},
+  Human:{b:{str:1,dex:1,con:1,int:1,wis:1,cha:1},sp:30}, Tabaxi:{b:{dex:2,cha:1},sp:30}, Tiefling:{b:{cha:2,int:1},sp:30}
+};
+const FULL=[[],[2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2,1],[4,3,3,3,2,1],
+  [4,3,3,3,2,1,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1]];
+function optList(list,cur){
+  const l=cur&&!list.includes(cur)?[cur,...list]:list;
+  return `<option value=""${cur?"":" selected"}>Choose…</option>`+l.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");
+}
+function slotsFor(c,lvl){
+  let m=[];
+  if(c.cast==="full")m=FULL[lvl];
+  else if(c.cast==="half")m=lvl>=2?FULL[Math.ceil(lvl/2)]:[];
+  else if(c.cast==="halfup")m=FULL[Math.ceil(lvl/2)];
+  else if(c.cast==="pact"){const n=lvl>=17?4:lvl>=11?3:lvl>=2?2:1,lv=Math.min(5,Math.ceil(lvl/2));m=[];m[lv-1]=n}
+  return SL(...Array.from({length:9},(_,i)=>m[i]||0));
+}
+function build(cls,race,lvl){
+  const c=CLASSES[cls];if(!c)return null;
+  const r=RACES[race]||{b:{},sp:30},arr=[15,14,13,12,10,8],a={};
+  c.pri.forEach((k,i)=>a[k]=arr[i]);
+  Object.entries(r.b).forEach(([k,n])=>a[k]+=n);
+  if(r.flex){let n=r.flex;for(const k of c.pri){if(!n)break;if(!r.b[k]){a[k]+=1;n--}}}
+  // Ability score improvements: +2 to the main ability, then the next, up to 20
+  c.asi.filter(x=>x<=lvl).forEach(()=>{let pts=2;for(const k of c.pri){while(pts&&a[k]<20){a[k]++;pts--}if(!pts)break}});
+  const m=k=>mod(a[k]),con=m("con");
+  const hp=Math.max(1,c.hd+con)+(lvl-1)*Math.max(1,c.hd/2+1+con);
+  const AC={none:[10+m("dex"),"no armour"],barb:[10+m("dex")+con,"Unarmoured Defence"],monk:[10+m("dex")+m("wis"),"Unarmoured Defence"],
+    leather:[11+m("dex"),"leather armour"],"leather+shield":[13+m("dex"),"leather armour and shield"],studded:[12+m("dex"),"studded leather"],
+    scale:[14+Math.min(2,m("dex")),"scale mail"],"scale+shield":[16+Math.min(2,m("dex")),"scale mail and shield"],"chain+shield":[18,"chain mail and shield"]}[c.ac];
+  return {abil:a,hp,ac:AC[0],armour:AC[1],hd:c.hd,speed:(c.ac==="monk"&&lvl>=2?r.sp+(lvl>=18?30:lvl>=14?25:lvl>=10?20:lvl>=6?15:10):r.sp+(c.ac==="barb"&&lvl>=5?10:0)),
+    slots:slotsFor(c,lvl),items:c.kit};
+}
+
+/* ---------- Spells (SRD 5.1 lists). Codes: A artificer B bard C cleric D druid P paladin R ranger S sorcerer K warlock W wizard ---------- */
+const SPELL_SRC=`Acid Splash|0|SWA
+Chill Touch|0|SKW
+Dancing Lights|0|BSWA
+Druidcraft|0|D
+Eldritch Blast|0|K
+Fire Bolt|0|SWA
+Guidance|0|CDA
+Light|0|BCSWA
+Mage Hand|0|BSKWA
+Mending|0|BCDSWA
+Message|0|BSWA
+Minor Illusion|0|BSKW
+Poison Spray|0|DSKWA
+Prestidigitation|0|BSKWA
+Produce Flame|0|D
+Ray of Frost|0|SWA
+Resistance|0|CDA
+Sacred Flame|0|C
+Shillelagh|0|D
+Shocking Grasp|0|SWA
+Spare the Dying|0|CA
+Thaumaturgy|0|C
+True Strike|0|BSKW
+Vicious Mockery|0|B
+Alarm|1|RWA
+Animal Friendship|1|BDR
+Bane|1|BC
+Bless|1|CP
+Burning Hands|1|SW
+Charm Person|1|BDSKW
+Color Spray|1|SW
+Command|1|CP
+Comprehend Languages|1|BSKW
+Create or Destroy Water|1|CD
+Cure Wounds|1|BCDPRA
+Detect Evil and Good|1|CP
+Detect Magic|1|BCDPRSWA
+Detect Poison and Disease|1|CDPR
+Disguise Self|1|BSWA
+Divine Favor|1|P
+Entangle|1|D
+Expeditious Retreat|1|SKWA
+Faerie Fire|1|BDA
+False Life|1|SWA
+Feather Fall|1|BSWA
+Find Familiar|1|W
+Floating Disk|1|W
+Fog Cloud|1|DRSW
+Goodberry|1|DR
+Grease|1|WA
+Guiding Bolt|1|C
+Healing Word|1|BCDA
+Hellish Rebuke|1|K
+Heroism|1|BP
+Hideous Laughter|1|BW
+Hunter's Mark|1|R
+Identify|1|BWA
+Illusory Script|1|BKW
+Inflict Wounds|1|C
+Jump|1|DRSWA
+Longstrider|1|BDRWA
+Mage Armor|1|SW
+Magic Missile|1|SW
+Protection from Evil and Good|1|CPKW
+Purify Food and Drink|1|CDPA
+Sanctuary|1|CA
+Shield|1|SW
+Shield of Faith|1|CP
+Silent Image|1|BSW
+Sleep|1|BSW
+Speak with Animals|1|BDR
+Thunderwave|1|BDSW
+Unseen Servant|1|BKW
+Acid Arrow|2|W
+Aid|2|CPA
+Alter Self|2|SWA
+Animal Messenger|2|BDR
+Arcane Lock|2|WA
+Augury|2|C
+Barkskin|2|DR
+Blindness/Deafness|2|BCSW
+Blur|2|SWA
+Calm Emotions|2|BC
+Continual Flame|2|CWA
+Darkness|2|SKW
+Darkvision|2|DRSWA
+Detect Thoughts|2|BSW
+Enhance Ability|2|BCDSA
+Enlarge/Reduce|2|SWA
+Enthrall|2|BK
+Find Steed|2|P
+Find Traps|2|CDR
+Flame Blade|2|D
+Flaming Sphere|2|DW
+Gentle Repose|2|CW
+Gust of Wind|2|DSW
+Heat Metal|2|BDA
+Hold Person|2|BCDSKW
+Invisibility|2|BSKWA
+Knock|2|BSW
+Lesser Restoration|2|BCDPRA
+Levitate|2|SWA
+Locate Animals or Plants|2|BDR
+Locate Object|2|BCDPRW
+Magic Mouth|2|BWA
+Magic Weapon|2|PWA
+Mirror Image|2|SKW
+Misty Step|2|SKW
+Moonbeam|2|D
+Pass without Trace|2|DR
+Prayer of Healing|2|C
+Protection from Poison|2|CDPRA
+Ray of Enfeeblement|2|KW
+Rope Trick|2|WA
+Scorching Ray|2|SW
+See Invisibility|2|BSWA
+Shatter|2|BSKW
+Silence|2|BCR
+Spider Climb|2|SKWA
+Spike Growth|2|DR
+Spiritual Weapon|2|C
+Suggestion|2|BSKW
+Warding Bond|2|C
+Web|2|SWA
+Zone of Truth|2|BCP
+Animate Dead|3|CW
+Beacon of Hope|3|C
+Bestow Curse|3|BCW
+Blink|3|SWA
+Call Lightning|3|D
+Clairvoyance|3|BCSW
+Conjure Animals|3|DR
+Counterspell|3|SKW
+Create Food and Water|3|CPA
+Daylight|3|CDPRS
+Dispel Magic|3|BCDPSKWA
+Fear|3|BSKW
+Fireball|3|SW
+Fly|3|SKWA
+Gaseous Form|3|SKW
+Glyph of Warding|3|BCWA
+Haste|3|SWA
+Hypnotic Pattern|3|BSKW
+Lightning Bolt|3|SW
+Magic Circle|3|CPKW
+Major Image|3|BSKW
+Mass Healing Word|3|C
+Meld into Stone|3|CD
+Nondetection|3|BRW
+Plant Growth|3|BDR
+Protection from Energy|3|CDRSWA
+Remove Curse|3|CPKW
+Revivify|3|CPA
+Sending|3|BCW
+Sleet Storm|3|DSW
+Slow|3|SW
+Speak with Dead|3|BC
+Speak with Plants|3|BDR
+Spirit Guardians|3|C
+Stinking Cloud|3|BSW
+Tongues|3|BCSKW
+Vampiric Touch|3|KW
+Water Breathing|3|DRSWA
+Water Walk|3|CDRSA
+Wind Wall|3|DR
+Arcane Eye|4|CWA
+Banishment|4|CPSKW
+Black Tentacles|4|W
+Blight|4|DSKW
+Compulsion|4|B
+Confusion|4|BDSW
+Conjure Minor Elementals|4|DW
+Conjure Woodland Beings|4|DR
+Control Water|4|CDW
+Death Ward|4|CPA
+Dimension Door|4|BSKW
+Divination|4|C
+Dominate Beast|4|DS
+Fabricate|4|WA
+Faithful Hound|4|W
+Fire Shield|4|W
+Freedom of Movement|4|BCDRA
+Giant Insect|4|D
+Greater Invisibility|4|BSW
+Guardian of Faith|4|C
+Hallucinatory Terrain|4|BDKW
+Ice Storm|4|DSW
+Locate Creature|4|BCDPRW
+Phantasmal Killer|4|W
+Polymorph|4|BDSW
+Private Sanctum|4|W
+Resilient Sphere|4|WA
+Secret Chest|4|WA
+Stone Shape|4|CDWA
+Stoneskin|4|DRSWA
+Wall of Fire|4|DSW
+Animate Objects|5|BSWA
+Antilife Shell|5|D
+Awaken|5|BD
+Cloudkill|5|SW
+Commune|5|C
+Commune with Nature|5|DR
+Cone of Cold|5|SW
+Conjure Elemental|5|DW
+Contact Other Plane|5|KW
+Contagion|5|CD
+Creation|5|SWA
+Dispel Evil and Good|5|CP
+Dominate Person|5|BSW
+Dream|5|BKW
+Flame Strike|5|C
+Geas|5|BCDPW
+Greater Restoration|5|BCDA
+Hallow|5|C
+Hold Monster|5|BSKW
+Insect Plague|5|CDS
+Legend Lore|5|BCW
+Mass Cure Wounds|5|BCD
+Mislead|5|BW
+Modify Memory|5|BW
+Passwall|5|W
+Planar Binding|5|BCDKW
+Raise Dead|5|BCP
+Scrying|5|BCDKW
+Seeming|5|BSW
+Telekinesis|5|SW
+Telepathic Bond|5|W
+Teleportation Circle|5|BSW
+Tree Stride|5|DR
+Wall of Force|5|W
+Wall of Stone|5|DSWA
+Blade Barrier|6|C
+Chain Lightning|6|SW
+Circle of Death|6|SKW
+Conjure Fey|6|DK
+Contingency|6|W
+Create Undead|6|CKW
+Disintegrate|6|SW
+Eyebite|6|BSKW
+Find the Path|6|BCD
+Flesh to Stone|6|KW
+Forbiddance|6|C
+Globe of Invulnerability|6|SW
+Guards and Wards|6|BW
+Harm|6|C
+Heal|6|CD
+Heroes' Feast|6|CD
+Instant Summons|6|W
+Irresistible Dance|6|BW
+Magic Jar|6|W
+Mass Suggestion|6|BSKW
+Move Earth|6|DSW
+Planar Ally|6|C
+Programmed Illusion|6|BW
+Sunbeam|6|DSW
+Transport via Plants|6|D
+True Seeing|6|BCSKW
+Wall of Ice|6|W
+Wall of Thorns|6|D
+Wind Walk|6|D
+Word of Recall|6|C
+Conjure Celestial|7|C
+Delayed Blast Fireball|7|SW
+Divine Word|7|C
+Etherealness|7|BCSKW
+Finger of Death|7|SKW
+Fire Storm|7|CDS
+Forcecage|7|BKW
+Magnificent Mansion|7|BW
+Mirage Arcane|7|BDW
+Plane Shift|7|CDSKW
+Prismatic Spray|7|SW
+Project Image|7|BW
+Regenerate|7|BCD
+Resurrection|7|BC
+Reverse Gravity|7|DSW
+Sequester|7|W
+Simulacrum|7|W
+Symbol|7|BCDW
+Teleport|7|BSW
+Animal Shapes|8|D
+Antimagic Field|8|CW
+Antipathy/Sympathy|8|DW
+Clone|8|W
+Control Weather|8|CDW
+Demiplane|8|KW
+Dominate Monster|8|BSKW
+Earthquake|8|CDS
+Feeblemind|8|BDKW
+Glibness|8|BK
+Holy Aura|8|C
+Incendiary Cloud|8|SW
+Maze|8|W
+Mind Blank|8|BW
+Power Word Stun|8|BSKW
+Sunburst|8|DSW
+Astral Projection|9|CKW
+Foresight|9|BDKW
+Gate|9|CSW
+Imprisonment|9|KW
+Mass Heal|9|C
+Meteor Swarm|9|SW
+Power Word Kill|9|BSKW
+Prismatic Wall|9|W
+Shapechange|9|DW
+Storm of Vengeance|9|D
+Time Stop|9|SW
+True Polymorph|9|BKW
+True Resurrection|9|CD
+Weird|9|W
+Wish|9|S`;
+const SPELLS=SPELL_SRC.split("\n").map(l=>{const[n,lv,c]=l.split("|");return{n,lv:+lv,c}});
+const SPELL_LV=Object.fromEntries(SPELLS.map(s=>[s.n,s.lv]));
+const CODE={Artificer:"A",Bard:"B",Cleric:"C",Druid:"D",Paladin:"P",Ranger:"R",Sorcerer:"S",Warlock:"K",Wizard:"W"};
+const LVNAME=l=>l===0?"Cantrip":ORD[l-1];
+const KNOWN={Bard:[4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22],
+  Sorcerer:[2,3,4,5,6,7,8,9,10,11,12,12,13,13,14,14,15,15,15,15],
+  Warlock:[2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,15,15],
+  Ranger:[0,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11]};
+const CANTRIPS={Bard:[2,4,10],Cleric:[3,4,10],Druid:[2,4,10],Sorcerer:[4,4,10],Warlock:[2,4,10],Wizard:[3,4,10],Artificer:[2,10,14]};
+function spellRules(p){
+  const c=CLASSES[p.cls],lvl=clamp(+p.lvl||1,1,20);
+  if(!c||c.cast==="none"||!CODE[p.cls])return{caster:false,cantrips:0,spells:0,kind:"",maxLv:9,code:null};
+  let cantrips=0;const ct=CANTRIPS[p.cls];
+  if(ct){cantrips=ct[0]+(lvl>=ct[1]?1:0)+(lvl>=ct[2]?1:0);if(p.cls==="Sorcerer")cantrips=4+(lvl>=4?1:0)+(lvl>=10?1:0)}
+  let spells=0,kind="known";
+  if(KNOWN[p.cls])spells=KNOWN[p.cls][lvl-1];
+  else{kind="prepared";
+    if(p.cls==="Cleric"||p.cls==="Druid")spells=Math.max(1,mod(p.abil.wis)+lvl);
+    else if(p.cls==="Wizard")spells=Math.max(1,mod(p.abil.int)+lvl);
+    else if(p.cls==="Paladin")spells=lvl<2?0:Math.max(1,mod(p.abil.cha)+Math.floor(lvl/2));
+    else if(p.cls==="Artificer")spells=Math.max(1,mod(p.abil.int)+Math.floor(lvl/2));}
+  const sl=slotsFor(c,lvl);let maxLv=0;sl.forEach((s,i)=>{if(s.max)maxLv=i+1});
+  if(p.cls==="Warlock")maxLv=Math.min(5,Math.ceil(lvl/2));
+  return{caster:true,cantrips,spells,kind,maxLv,code:CODE[p.cls]};
+}
+function spellsOf(p){if(!p.spells||!Array.isArray(p.spells.c))p.spells={c:[],s:[]};return p.spells}
+function spellBlock(p){
+  const r=spellRules(p),sp=spellsOf(p),c=sp.c.filter(Boolean),s=sp.s.filter(Boolean);
+  if(!r.caster&&!c.length&&!s.length)return "";
+  const by={};s.forEach(n=>{const l=SPELL_LV[n]??1;(by[l]=by[l]||[]).push(n)});
+  const cnt=(have,want)=>`<b class="${have<want?"short":""}">${have}/${want}</b>`;
+  return `<div class="spells"><div class="items-h"><span class="lbl">Spells</span><button class="linkbtn" data-act="spells" data-id="${p.id}">Edit spells</button></div>
+    ${r.caster?`<div class="count">Cantrips ${cnt(c.length,r.cantrips)} · Spells ${r.kind} ${cnt(s.length,r.spells)}</div>`:""}
+    ${c.length?`<div class="sp-l"><span>Cantrip</span><span>${c.map(esc).join(", ")}</span></div>`:""}
+    ${Object.keys(by).sort((a,b)=>a-b).map(l=>`<div class="sp-l"><span>${ORD[l-1]}</span><span>${by[l].map(esc).join(", ")}</span></div>`).join("")}
+    ${!c.length&&!s.length?`<p class="none" style="margin:0;color:var(--faint);font-style:italic;font-size:.88rem">No spells chosen yet</p>`:""}</div>`;
+}
+function spellOptions(r,cantrip,cur){
+  const pool=SPELLS.filter(s=>(cantrip?s.lv===0:s.lv>=1&&s.lv<=r.maxLv)&&(!r.code||s.c.includes(r.code)));
+  const groups={};pool.forEach(s=>{(groups[s.lv]=groups[s.lv]||[]).push(s.n)});
+  let h=`<option value="">${cantrip?"Choose a cantrip…":"Choose a spell…"}</option>`;
+  if(cur&&!pool.some(s=>s.n===cur))h+=`<option selected>${esc(cur)}</option>`;
+  Object.keys(groups).sort((a,b)=>a-b).forEach(l=>{h+=`<optgroup label="${LVNAME(+l)}">`+groups[l].map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")+`</optgroup>`});
+  return h;
+}
+function spellSheet(p){
+  const r=spellRules(p),sp=spellsOf(p);
+  while(sp.c.length<r.cantrips)sp.c.push("");
+  while(sp.s.length<r.spells)sp.s.push("");
+  const list=(arr,key,cantrip)=>arr.map((n,i)=>`<div class="pick"><select class="plain" id="sp-${key}-${i}" data-sp="${key}" data-i="${i}" aria-label="${cantrip?"Cantrip":"Spell"} ${i+1}">${spellOptions(r,cantrip,n)}</select><button type="button" class="sq x" data-sprm="${key}" data-i="${i}" aria-label="Remove">×</button></div>`).join("");
+  const intro=r.caster?`A level ${p.lvl} ${esc(p.cls)} has <b>${r.cantrips}</b> cantrips and <b>${r.spells}</b> spells ${r.kind}${r.maxLv?`, up to ${ORD[r.maxLv-1]} level`:""}.${r.kind==="prepared"?" Prepared spells use their ability modifier plus level.":""}${p.cls==="Warlock"&&p.lvl>=11?" Mystic Arcanum (6th+) isn't counted here.":""}`
+    :`${p.cls?esc(p.cls)+"s don't":"This character doesn't"} cast spells by default. Add spells here for subclasses like Eldritch Knight or Arcane Trickster, or from feats.`;
+  openSheet(`<h2>${esc(p.name)}: spells</h2><div class="stack">
+    <p class="hint" style="margin:0;color:var(--muted)">${intro}</p>
+    <div class="f"><span class="lbl">Cantrips</span><div class="picks">${list(sp.c,"c",true)}</div><button type="button" class="linkbtn" data-spadd="c" style="align-self:flex-start">+ Add cantrip</button></div>
+    <div class="f"><span class="lbl">Spells ${r.kind}</span><div class="picks">${list(sp.s,"s",false)}</div><button type="button" class="linkbtn" data-spadd="s" style="align-self:flex-start">+ Add spell</button></div>
+    <div class="foot"><span></span><button class="btn gold" data-x="done">Done</button></div></div>`,b=>{
+    b.querySelectorAll("[data-sp]").forEach(x=>x.onchange=()=>{sp[x.dataset.sp][+x.dataset.i]=x.value;commit(keyFor(p.id))});
+    b.querySelectorAll("[data-sprm]").forEach(x=>x.onclick=()=>{sp[x.dataset.sprm].splice(+x.dataset.i,1);commit(keyFor(p.id));spellSheet(p)});
+    b.querySelectorAll("[data-spadd]").forEach(x=>x.onclick=()=>{sp[x.dataset.spadd].push("");spellSheet(p)});
+    b.querySelector('[data-x="done"]').onclick=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean);commit(keyFor(p.id));closeSheet()};
+  });
+  onClose=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean)};
+}
+function editSheet(p,isNew){
+  openSheet(`<h2>${isNew?"New player":"Edit "+esc(p.name)}</h2><form class="stack" id="ef">
+    <div class="f"><label for="e-name">Name</label><input type="text" id="e-name" value="${esc(p.name)}"></div>
+    <div class="row"><div class="f"><label for="e-race">Race</label><select class="plain" id="e-race">${optList(Object.keys(RACES),p.race)}</select></div>
+      <div class="f"><label for="e-cls">Class</label><select class="plain" id="e-cls">${optList(Object.keys(CLASSES),p.cls)}</select></div>
+      <div class="f"><label for="e-lvl">Level</label><select class="plain" id="e-lvl">${Array.from({length:20},(_,i)=>`<option${i+1===+p.lvl?" selected":""}>${i+1}</option>`).join("")}</select></div></div>
+    <div class="autobox" id="autobox">
+      <p class="hint" id="autoMsg" style="margin:0">Pick a class, race and level to fill in AC, HP, speed, ability scores, spell slots and starting gear. You can still change anything.</p>
+      <label class="chk" id="kitWrap" hidden><input type="checkbox" id="e-kit"> Replace their items with the starting kit</label>
+      <button type="button" class="btn" id="autoBtn">Fill from class &amp; level</button>
+    </div>
+    <div class="row"><div class="f"><label for="e-ac">AC</label><input type="number" inputmode="numeric" id="e-ac" value="${p.ac}"></div>
+      <div class="f"><label for="e-hp">HP</label><input type="number" inputmode="numeric" id="e-hp" value="${p.hp}"></div>
+      <div class="f"><label for="e-max">Max HP</label><input type="number" inputmode="numeric" id="e-max" value="${p.max}"></div>
+      <div class="f"><label for="e-speed">Speed</label><input type="number" inputmode="numeric" id="e-speed" value="${p.speed}"></div></div>
+    <div class="f"><label>Ability scores</label><div class="row6">${ABIL.map(a=>`<div class="f"><label for="e-${a}" style="text-align:center">${a.toUpperCase()}</label><input type="number" inputmode="numeric" id="e-${a}" value="${p.abil[a]}"></div>`).join("")}</div></div>
+    ${p.id!=="me"?`<div class="f"><label for="e-notes">DM notes</label><textarea id="e-notes" rows="3">${esc(p.notes)}</textarea></div>`:""}
+    <div class="foot">${isNew?`<button type="button" class="btn ghost" data-x="cancel">Cancel</button>`:p.id==="me"?`<button type="button" class="btn danger" data-x="reset">Start fresh</button>`:`<button type="button" class="btn danger" data-x="del">Remove player</button>`}
+      <button class="btn gold">Save</button></div></form>`,b=>{
+    const f=b.querySelector("#ef"),v=id=>b.querySelector("#"+id).value,set=(id,x)=>{b.querySelector("#"+id).value=x};
+    let auto=null;
+    const kitWrap=b.querySelector("#kitWrap"),kit=b.querySelector("#e-kit"),msg=b.querySelector("#autoMsg");
+    const fill=()=>{
+      const r=build(v("e-cls"),v("e-race"),+v("e-lvl")||1);
+      if(!r){msg.textContent="Pick a class first.";return}
+      auto=r;
+      set("e-ac",r.ac);set("e-max",r.hp);set("e-hp",r.hp);set("e-speed",r.speed);
+      ABIL.forEach(a=>set("e-"+a,r.abil[a]));
+      const hasItems=p.items.length>0;
+      kitWrap.hidden=!hasItems;kit.checked=false;
+      const sl=r.slots.map((s,i)=>s.max?`${s.max}×${ORD[i]}`:"").filter(Boolean).join(", ");
+      msg.innerHTML=`Filled for a level ${+v("e-lvl")} ${esc(v("e-race")||"")} ${esc(v("e-cls"))}: d${r.hd} hit die, ${esc(r.armour)}. Spell slots: ${sl||"none"}. ${hasItems?"":"Starting kit added on save."} Check and adjust anything before saving.`;
+    };
+    b.querySelector("#autoBtn").onclick=fill;
+    ["e-cls","e-race","e-lvl"].forEach(id=>b.querySelector("#"+id).addEventListener("change",()=>{if(v("e-cls"))fill()}));
+    f.onsubmit=e=>{e.preventDefault();
+      if(auto){p.slots=auto.slots;if(!p.items.length||kit.checked)p.items=auto.items.map(([n,q])=>it(n,q))}
+      p.name=v("e-name").trim()||"Unnamed";p.race=v("e-race").trim();p.cls=v("e-cls").trim();p.lvl=+v("e-lvl")||1;
+      p.ac=+v("e-ac")||0;p.max=Math.max(1,+v("e-max")||1);p.hp=clamp(+v("e-hp")||0,0,p.max);p.speed=+v("e-speed")||0;
+      ABIL.forEach(a=>p.abil[a]=+v("e-"+a)||10);if(b.querySelector("#e-notes"))p.notes=v("e-notes");
+      p.ex=false;
+      if(isNew){if(p.id==="me")S.me=p;else camp().players.push(p);}
+      commit(keyFor(p.id));closeSheet();};
+    const x=b.querySelector("[data-x]");
+    x.onclick=()=>{
+      if(x.dataset.x==="cancel")return closeSheet();
+      if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent=x.dataset.x==="del"?"Tap again to remove":"Tap again to clear sheet";return}
+      if(x.dataset.x==="del"){camp().players=camp().players.filter(q=>q.id!==p.id);commit(campKey())}
+      else{S.me=null;commit("me")}
+      closeSheet();
+    };
+  });
+}
+function campSheet(){
+  const c=S.core.camps.find(c=>c.id===S.core.active);
+  openSheet(`<h2>Campaign</h2><form class="stack" id="cf">
+    <div class="f"><label for="c-name">Name</label><input type="text" id="c-name" value="${esc(c?c.name:"")}"></div>
+    <div class="foot"><button type="button" class="btn danger" data-x="del">Delete campaign</button><button class="btn gold">Save</button></div></form>`,b=>{
+    b.querySelector("#cf").onsubmit=e=>{e.preventDefault();c.name=b.querySelector("#c-name").value.trim()||c.name;commit("core");closeSheet()};
+    const x=b.querySelector('[data-x="del"]');
+    x.onclick=()=>{if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent="Tap again: deletes all its players";return}
+      S.core.camps=S.core.camps.filter(q=>q.id!==c.id);delete S.camps[c.id];
+      if(online)col.doc("camp_"+c.id).delete().catch(()=>{});
+      S.core.active=S.core.camps.length?S.core.camps[0].id:null;commit("core");closeSheet();};
+  });
+}
+function newCampSheet(){
+  openSheet(`<h2>New campaign</h2><form class="stack" id="nf"><div class="f"><label for="n-name">Name</label><input type="text" id="n-name" placeholder="e.g. Curse of the Ash Road"></div>
+    <div class="foot"><button type="button" class="btn ghost" data-x="c">Cancel</button><button class="btn gold">Create</button></div></form>`,b=>{
+    setTimeout(()=>b.querySelector("#n-name").focus(),250);
+    b.querySelector('[data-x="c"]').onclick=closeSheet;
+    b.querySelector("#nf").onsubmit=e=>{e.preventDefault();const n=b.querySelector("#n-name").value.trim();if(!n)return;
+      const id=uid();S.core.camps.push({id,name:n});S.camps[id]={players:[]};S.core.active=id;commit("core");commit("camp_"+id);closeSheet();};
+  });
+}
+
+
+/* ---------- Monsters (SRD 5.1). name|CR|AC|HP|hit dice|Dex mod|speed|attacks ---------- */
+const MON_SRC=`Acolyte|1/4|10|9|2d8|0|30 ft|Club +2, 1d4 bludgeoning; spellcaster (Sanctuary, Cure Wounds)
+Adult Red Dragon|17|19|256|19d12+133|0|40 ft, fly 80 ft|Multiattack 3; Bite +14, 2d10+8 + 2d6 fire; Claw +14, 2d6+8; Fire Breath DC 21, 18d6
+Animated Armor|1|18|33|6d8+6|0|25 ft|Multiattack 2; Slam +4, 1d6+2
+Ankheg|2|14|39|6d10+6|0|30 ft, burrow 10 ft|Bite +5, 2d6+3 + 1d6 acid, grapple; Acid Spray DC 13, 3d6
+Bandit|1/8|12|11|2d8+2|1|30 ft|Scimitar +3, 1d6+1; Light crossbow +3, 1d8+1
+Bandit Captain|2|15|65|10d8+20|3|30 ft|Multiattack 3; Scimitar +5, 1d6+3; Dagger +5, 1d4+3
+Banshee|4|12|58|13d8|2|0 ft, fly 40 ft|Corrupting Touch +4, 3d6+2 necrotic; Horrifying Visage; Wail DC 13
+Barbed Devil|5|15|110|13d8+52|3|30 ft|Multiattack 3; Claw +6, 1d6+3; Tail +6, 2d6+3; Hurl Flame +5, 3d6 fire
+Bearded Devil|3|13|52|8d8+16|2|30 ft|Multiattack 2; Beard +5, 1d8+2, poisoned DC 12; Glaive +5, 1d10+3, infernal wound
+Black Pudding|4|7|85|10d10+30|-3|20 ft, climb 20 ft|Pseudopod +5, 1d6+3 + 4d8 acid
+Bone Devil|9|19|142|15d10+60|3|40 ft, fly 40 ft|Multiattack 3; Claw +8, 1d8+4; Sting +8, 2d8+4 + 5d6 poison
+Brown Bear|1|11|34|4d10+12|0|40 ft, climb 30 ft|Multiattack 2; Bite +6, 1d8+4; Claws +6, 2d6+4
+Bugbear|1|16|27|5d8+5|2|30 ft|Morningstar +4, 2d8+2; Javelin +4, 2d6+2; Surprise Attack +2d6
+Chain Devil|8|16|85|10d8+40|2|30 ft|Multiattack 2; Chain +8, 2d6+4, grapple
+Cockatrice|1/2|11|27|6d6+6|1|20 ft, fly 40 ft|Bite +3, 1d4+1, petrification DC 11
+Commoner|0|10|4|1d8|0|30 ft|Club +2, 1d4
+Constrictor Snake|1/4|12|13|2d10+2|2|30 ft, swim 30 ft|Bite +4, 1d6+2; Constrict +4, 1d8+2, grapple
+Crocodile|1/2|12|19|3d10+3|0|20 ft, swim 30 ft|Bite +4, 1d10+2, grapple
+Cult Fanatic|2|13|33|6d8+6|2|30 ft|Multiattack 2; Dagger +4, 1d4+2; spellcaster (Hold Person, Spiritual Weapon)
+Cultist|1/8|12|9|2d8|1|30 ft|Scimitar +3, 1d6+1
+Dire Wolf|1|14|37|5d10+10|2|50 ft|Bite +5, 2d6+3, prone DC 13; Pack Tactics
+Doppelganger|3|14|52|8d8+16|4|30 ft|Multiattack 2; Slam +6, 1d6+4; Read Thoughts; Surprise Attack +3d6
+Dretch|1/4|11|18|4d6+4|0|20 ft|Multiattack 2; Bite +2, 1d6; Claws +2, 2d4; Fetid Cloud
+Drow|1/4|15|13|3d8|2|30 ft|Shortsword +4, 1d6+2; Hand crossbow +4, 1d6+2, poisoned DC 13
+Erinyes|12|18|153|18d8+72|3|30 ft, fly 60 ft|Multiattack 3; Longsword +8, 1d8+4 + 3d8 poison; Longbow +7, 1d8+3 + 3d8 poison
+Flying Sword|1/4|17|17|5d6|2|0 ft, fly 50 ft|Longsword +3, 1d8+1
+Gargoyle|2|15|52|7d8+21|0|30 ft, fly 60 ft|Multiattack 2; Bite +4, 1d6+2; Claws +4, 1d6+2
+Gelatinous Cube|2|6|84|8d10+40|-4|15 ft|Pseudopod +4, 3d6 acid; Engulf DC 12, 3d6 acid
+Ghast|2|13|36|8d8|3|30 ft|Bite +3, 2d8+1; Claws +5, 2d6+3, paralysed DC 10; Stench DC 10
+Ghost|4|11|45|10d8|1|0 ft, fly 40 ft|Withering Touch +5, 4d6+3 necrotic; Horrifying Visage; Possession
+Ghoul|1|12|22|5d8|2|30 ft|Bite +2, 2d6+2; Claws +4, 2d4+2, paralysed DC 10
+Giant Rat|1/8|12|7|2d6|2|30 ft|Bite +4, 1d4+2; Pack Tactics
+Giant Spider|1|14|26|4d10+4|3|30 ft, climb 30 ft|Bite +5, 1d8+3 + 2d8 poison DC 11; Web (recharge 5-6)
+Giant Wolf Spider|1/4|13|11|2d8+2|3|40 ft, climb 40 ft|Bite +3, 1d6+1 + 2d6 poison DC 11
+Gibbering Mouther|2|9|67|9d8+27|-1|10 ft, swim 10 ft|Bites +2, 5d6; Gibbering; Blinding Spittle
+Gnoll|1/2|15|22|5d8|1|30 ft|Bite +4, 1d4+2; Spear +4, 1d6+2; Longbow +3, 1d8+1
+Goblin|1/4|15|7|2d6|2|30 ft|Scimitar +4, 1d6+2; Shortbow +4, 1d6+2; Nimble Escape
+Guard|1/8|16|11|2d8+2|1|30 ft|Spear +3, 1d6+1
+Harpy|1|11|38|7d8+7|1|20 ft, fly 40 ft|Multiattack 2; Claws +3, 2d4+1; Club +3, 1d4+1; Luring Song DC 11
+Hell Hound|3|15|45|7d8+14|1|50 ft|Bite +5, 1d8+3 + 2d6 fire; Fire Breath 15 ft cone DC 12, 6d6 (recharge 5-6)
+Hill Giant|5|13|105|10d12+40|-1|40 ft|Multiattack 2; Greatclub +8, 3d8+5; Rock +8, 3d10+5
+Hobgoblin|1/2|18|11|2d8+2|1|30 ft|Longsword +3, 1d8+1; Longbow +3, 1d8+1; Martial Advantage +2d6
+Hydra|8|15|172|15d12+75|1|30 ft, swim 30 ft|One bite per head (5); Bite +8, 1d10+5; heads regrow
+Imp|1|13|10|3d4+3|3|20 ft, fly 40 ft|Sting +5, 1d4+3 + 3d6 poison DC 11; Invisibility; Devil's Sight
+Knight|3|18|52|8d8+16|0|30 ft|Multiattack 2; Greatsword +5, 2d6+3; Parry
+Kobold|1/8|12|5|2d6-2|2|30 ft|Dagger +4, 1d4+2; Sling +4, 1d4+2; Pack Tactics
+Lemure|0|7|13|3d8|-3|15 ft|Fist +3, 1d4
+Lich|21|17|135|18d8+54|3|30 ft|Paralysing Touch +12, 3d6 cold; spellcaster (Power Word Kill, Finger of Death)
+Lizardfolk|1/2|15|22|4d8+4|0|30 ft, swim 30 ft|Multiattack 2; Bite +4, 1d6+2; Heavy club +4, 1d6+2
+Mage|6|12|40|9d8|2|30 ft|Dagger +5, 1d4+2; spellcaster (Fireball, Cone of Cold, Counterspell)
+Mastiff|1/8|12|5|1d8+1|2|40 ft|Bite +3, 1d6+1, prone DC 11
+Medusa|6|15|127|17d8+51|2|30 ft|Multiattack 3; Snake Hair +5, 1d4+2 + 4d6 poison; Shortsword +5, 1d6+2; Petrifying Gaze DC 14
+Mimic|2|12|58|9d8+18|1|15 ft|Pseudopod +5, 1d8+3, adhesive; Bite +5, 1d8+3 + 1d8 acid
+Mind Flayer|7|15|71|13d8+13|1|30 ft|Tentacles +7, 2d10+4, stunned DC 15; Mind Blast DC 15, 4d8+4
+Minotaur|3|14|76|9d10+27|0|40 ft|Greataxe +6, 2d12+4; Gore +6, 2d8+4; Charge
+Mummy|3|11|58|9d8+18|-1|20 ft|Multiattack; Rotting Fist +5, 2d6+3 + 3d6 necrotic; Dreadful Glare DC 11
+Nightmare|3|13|68|8d10+24|2|60 ft, fly 90 ft|Hooves +6, 2d8+4 + 2d6 fire; Ethereal Stride
+Ogre|2|11|59|7d10+21|-1|40 ft|Greatclub +6, 2d8+4; Javelin +6, 2d6+4
+Ogre Zombie|2|8|85|9d10+36|-2|30 ft|Morningstar +6, 2d8+4; Undead Fortitude
+Orc|1/2|13|15|2d8+6|1|30 ft|Greataxe +5, 1d12+3; Javelin +5, 1d6+3; Aggressive
+Owlbear|3|13|59|7d10+21|1|40 ft|Multiattack 2; Beak +7, 1d10+5; Claws +7, 2d8+5
+Pit Fiend|20|19|300|24d10+168|2|30 ft, fly 60 ft|Multiattack 4; Bite +14, 4d6+8, poisoned DC 21; Claw +14, 2d8+8; Mace +14, 2d6+8 + 6d6 fire
+Poisonous Snake|1/8|13|2|1d4|3|30 ft, swim 30 ft|Bite +5, 1 + 2d4 poison DC 10
+Priest|2|13|27|5d8+5|0|25 ft|Mace +2, 1d6; spellcaster (Spirit Guardians, Guiding Bolt)
+Quasit|1|13|7|3d4|3|40 ft|Claws +4, 1d4+3, poisoned DC 10; Scare; Invisibility
+Red Dragon Wyrmling|4|17|75|10d8+30|0|30 ft, fly 60 ft|Bite +6, 1d10+4 + 1d6 fire; Fire Breath DC 13, 7d6
+Rust Monster|1/2|14|27|5d8+5|1|40 ft|Bite +3, 1d8+1; Antennae corrode metal
+Sahuagin|1/2|12|22|4d8+4|0|30 ft, swim 40 ft|Multiattack 2; Bite +3, 1d4+1; Spear +3, 1d6+1; Blood Frenzy
+Scout|1/2|13|16|3d8+3|2|30 ft|Multiattack 2; Shortsword +4, 1d6+2; Longbow +4, 1d8+2
+Shadow|1/2|12|16|3d8+3|2|40 ft|Strength Drain +4, 2d6+2 necrotic, -1d4 Str
+Skeleton|1/4|13|13|2d8+4|2|30 ft|Shortsword +4, 1d6+2; Shortbow +4, 1d6+2
+Specter|1|12|22|5d8|2|0 ft, fly 50 ft|Life Drain +4, 3d6 necrotic
+Spider|0|12|1|1d4-1|2|20 ft, climb 20 ft|Bite +4, 1 + 1d4 poison DC 9
+Stirge|1/8|14|2|1d4|3|10 ft, fly 40 ft|Blood Drain +5, 1d4+3, attaches
+Succubus/Incubus|4|15|66|12d8+12|3|30 ft, fly 60 ft|Claw +5, 1d6+3; Charm DC 15; Draining Kiss DC 15, 5d10+5 psychic
+Swarm of Rats|1/4|10|24|7d8-7|0|30 ft|Bites +2, 2d6 (1d6 at half HP)
+Thug|1/2|11|32|5d8+10|0|30 ft|Multiattack 2; Mace +4, 1d6+2; Heavy crossbow +2, 1d10
+Troll|5|15|84|8d10+40|1|30 ft|Multiattack 3; Bite +7, 1d6+4; Claws +7, 2d6+4; Regeneration 10 (not fire/acid)
+Vampire Spawn|5|15|82|11d8+33|3|30 ft|Multiattack 2; Claws +6, 2d4+3; Bite +6, 1d6+3 + 3d6 necrotic
+Veteran|3|17|58|9d8+18|1|30 ft|Multiattack 2; Longsword +5, 1d8+3; Shortsword +5, 1d6+3
+Vrock|6|15|104|11d10+44|2|40 ft, fly 60 ft|Multiattack 2; Beak +6, 2d6+3; Talons +6, 2d10+3; Spores; Stunning Screech
+Werewolf|3|12|58|9d8+18|1|30 ft|Multiattack 2; Bite +4, 1d8+2, lycanthropy; Claws +4, 2d4+2
+White Dragon Wyrmling|2|16|32|5d8+10|0|30 ft, fly 60 ft|Bite +4, 1d10+2 + 1d4 cold; Cold Breath DC 12, 5d8
+Wight|3|14|45|6d8+18|2|30 ft|Multiattack 2; Life Drain +4, 1d6+2 necrotic; Longsword +4, 1d8+2
+Will-o'-Wisp|2|19|22|9d4|9|0 ft, fly 50 ft|Shock +4, 2d8 lightning; Invisibility; Consume Life
+Wolf|1/4|13|11|2d8+2|2|40 ft|Bite +4, 2d4+2, prone DC 11; Pack Tactics
+Wraith|5|13|67|9d8+27|3|0 ft, fly 60 ft|Life Drain +6, 4d8+3 necrotic; Create Specter
+Young Red Dragon|10|18|178|17d10+85|0|40 ft, fly 80 ft|Multiattack 3; Bite +10, 2d10+6 + 1d6 fire; Claw +10, 2d6+6; Fire Breath DC 17, 16d6
+Zombie|1/4|8|22|3d8+9|-2|20 ft|Slam +3, 1d6+1; Undead Fortitude`;
+const MONSTERS=MON_SRC.split("\n").map(l=>{const[n,cr,ac,hp,hd,dex,sp,atk]=l.split("|");return{name:n,cr,ac:+ac,hp:+hp,hd,dex:+dex,speed:sp,atk}});
+const crNum=c=>{c=String(c||"0");return c.includes("/")?(+c.split("/")[0])/(+c.split("/")[1]):+c||0};
+function rollDice(expr){
+  const m=String(expr||"").replace(/\s/g,"").match(/^(\d+)d(\d+)([+-]\d+)?$/i);if(!m)return null;
+  let t=+(m[3]||0);for(let i=0;i<+m[1];i++)t+=1+Math.floor(Math.random()*+m[2]);return Math.max(1,t);
+}
+const d20=()=>1+Math.floor(Math.random()*20);
+function allMonsters(){return[...S.core.myMonsters.map(m=>({...m,custom:true})),...MONSTERS]}
+function monByKey(k){if(k.startsWith("my:"))return S.core.myMonsters.find(m=>m.id===k.slice(3));return MONSTERS.find(m=>m.name===k.slice(4))}
+
+/* ---------- Combat ---------- */
+function combatants(){
+  return S.combat.list.map(e=>{
+    if(e.kind==="p"){const f=findPlayer(e.ref);return f?{e,p:f.p,dex:mod(f.p.abil.dex)}:null}
+    return {e,p:e,dex:e.dex||0};
+  }).filter(Boolean);
+}
+function ordered(){
+  return combatants().sort((a,b)=>(b.e.init??-99)-(a.e.init??-99)||b.dex-a.dex||String(a.p.name).localeCompare(b.p.name));
+}
+const isOut=x=>x.e.kind==="m"&&x.p.hp<=0;
+function step(dir){
+  const o=ordered();if(!o.length)return;
+  const C=S.combat;let i=o.findIndex(x=>x.e.id===C.cur);
+  if(i<0){const f=o.find(x=>!isOut(x));C.cur=f?f.e.id:o[0].e.id;C.round=C.round||1;commit("combat");render();return}
+  for(let n=0;n<o.length;n++){
+    i+=dir;
+    if(i>=o.length){i=0;C.round++}
+    if(i<0){i=o.length-1;C.round=Math.max(1,C.round-1)}
+    if(!isOut(o[i]))break;
+  }
+  C.cur=o[i].e.id;commit("combat");render();
+  const el=document.querySelector(".cb.cur");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+function renderCombat(){
+  const o=ordered(),C=S.combat,hasParty=camp().players.length>0;
+  const inFight=new Set(C.list.filter(e=>e.kind==="p").map(e=>e.ref));
+  const partyLeft=camp().players.filter(p=>!inFight.has(p.id)).length;
+  let h=`<div class="cbar">${hasParty&&partyLeft?`<button class="btn" data-act="cParty">+ Party${S.core.camps.length>1?` (${esc((S.core.camps.find(c=>c.id===S.core.active)||{}).name||"")})`:""}</button>`:""}
+    <button class="btn gold" data-act="cMon">+ Monster</button>
+    ${o.length?`<button class="btn" data-act="cRoll">Roll monster initiative</button><button class="btn danger" data-act="cEnd" id="cEnd">End fight</button>`:""}</div>`;
+  if(!o.length)return h+`<div class="empty"><h2>No fight yet</h2><p>${hasParty?"Add your party and some monsters. Initiative is rolled for you and you can change any number.":"Add monsters from the list or make your own. To bring in your players, create a campaign and add them on the DM screen first."}</p></div>`;
+  h+=`<div class="clist">`+o.map(x=>{
+    const {e,p}=x,cur=e.id===C.cur,out=isOut(x),pc=e.kind==="p";
+    return `<article class="cb${cur?" cur":""}${out?" dead":""}">
+      <button class="init" data-act="cInit" data-cid="${e.id}" aria-label="Initiative for ${esc(p.name)}"><small>INIT</small><b>${e.init??"–"}</b></button>
+      <div class="cb-main">
+        <div class="cb-top"><button class="cb-name" ${pc?"":`data-act="cInfo" data-cid="${e.id}"`}><b>${esc(p.name)}</b><span class="kind ${pc?"p":"m"}">${pc?"Player":"CR "+esc(e.cr||"?")}</span>${out?`<span class="tag down">Dead</span>`:pc&&p.hp<=0?`<span class="tag down">Down</span>`:""}</button>
+          <div class="cb-ac">AC <b>${p.ac}</b></div></div>
+        ${hpBlock(p)}
+        ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+        ${!pc&&e.atk?`<p class="atk">${esc(e.atk)}</p>`:""}
+        ${pc?`<p class="atk">${esc(subline(p))} · Passive Perc ${pp(p)}</p>`:""}
+        <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button>${pc?"":`<button class="btn" data-act="cInfo" data-cid="${e.id}">Details</button>`}<button class="btn ghost" data-act="cDel" data-cid="${e.id}">Remove</button></div>
+      </div></article>`}).join("")+`</div>`;
+  return h;
+}
+const tb=document.getElementById("turnbar");
+function renderTurnbar(){
+  if(S.core.mode!=="combat"||!S.combat.list.length){tb.hidden=true;return}
+  tb.hidden=false;
+  const cur=combatants().find(x=>x.e.id===S.combat.cur);
+  tb.innerHTML=`<button class="btn" data-act="cPrev">Back</button>
+    <div class="now"><small>Round ${S.combat.round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Ready to start"}</b></div>
+    <button class="btn gold" data-act="cNext">${cur?"Next":"Start"}</button>`;
+}
+function addParty(){
+  const inFight=new Set(S.combat.list.filter(e=>e.kind==="p").map(e=>e.ref));
+  camp().players.filter(p=>!inFight.has(p.id)).forEach(p=>S.combat.list.push({id:uid(),kind:"p",ref:p.id,init:d20()+mod(p.abil.dex)}));
+  commit("combat");render();
+}
+function addMonsters(m,count,rollHp){
+  const base=m.name,existing=S.combat.list.filter(e=>e.kind==="m"&&e.base===base).length,L="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for(let i=0;i<count;i++){
+    const hp=(rollHp&&rollDice(m.hd))||m.hp;
+    const tag=(count>1||existing)?" "+(L[existing+i]||existing+i+1):"";
+    S.combat.list.push({id:uid(),kind:"m",base,name:base+tag,cr:m.cr,ac:m.ac,hp,max:hp,temp:0,dex:m.dex||0,speed:m.speed||"",atk:m.atk||"",hd:m.hd||"",conds:[],init:d20()+(m.dex||0)});
+  }
+  commit("combat");
+}
+function monSheet(sel){
+  const all=allMonsters();
+  const groups={};MONSTERS.forEach(m=>{(groups[m.cr]=groups[m.cr]||[]).push(m)});
+  const crs=Object.keys(groups).sort((a,b)=>crNum(a)-crNum(b));
+  const opts=(S.core.myMonsters.length?`<optgroup label="My monsters">${S.core.myMonsters.map(m=>`<option value="my:${m.id}">${esc(m.name)} (CR ${esc(m.cr)})</option>`).join("")}</optgroup>`:"")
+    +crs.map(c=>`<optgroup label="CR ${c}">${groups[c].map(m=>`<option value="srd:${esc(m.name)}">${esc(m.name)}</option>`).join("")}</optgroup>`).join("");
+  let count=1;
+  openSheet(`<h2>Add monster</h2><div class="stack">
+    <div class="f"><label for="m-sel">Monster</label><select class="plain" id="m-sel"><option value="">Choose a monster…</option>${opts}</select></div>
+    <div class="mon-prev" id="m-prev"><p class="hint" style="margin:0">Pick a monster to see its stats. Monsters come from the free SRD rules, grouped by challenge rating.</p></div>
+    <div class="row"><div class="f"><span class="lbl">How many</span><div class="stepper"><button type="button" class="sq" id="m-minus" aria-label="Fewer">−</button><b id="m-count">1</b><button type="button" class="sq" id="m-plus" aria-label="More">+</button></div></div>
+      <div class="f"><label for="m-hp">Hit points</label><select class="plain" id="m-hp"><option value="avg">Average</option><option value="roll">Roll each</option></select></div></div>
+    <div class="foot"><button type="button" class="btn" id="m-custom">Create your own</button><button type="button" class="btn gold" id="m-add">Add to fight</button></div></div>`,b=>{
+    const selEl=b.querySelector("#m-sel"),prev=b.querySelector("#m-prev");
+    const show=()=>{const m=selEl.value?monByKey(selEl.value):null;
+      if(!m){prev.innerHTML=`<p class="hint" style="margin:0">Pick a monster to see its stats. Monsters come from the free SRD rules, grouped by challenge rating.</p>`;return}
+      prev.innerHTML=`<div class="mini"><span>CR <b>${esc(m.cr)}</b></span><span>AC <b>${m.ac}</b></span><span>HP <b>${m.hp}</b>${m.hd?` (${esc(m.hd)})`:""}</span><span>Init <b>${sg(m.dex||0)}</b></span></div>
+        ${m.speed?`<div class="mini"><span>Speed <b style="font-family:var(--f-body)">${esc(m.speed)}</b></span></div>`:""}<p class="atk">${esc(m.atk||"No attacks noted")}</p>
+        ${m.id?`<button type="button" class="linkbtn" style="align-self:flex-start;color:var(--blood)" id="m-forget">Delete from my monsters</button>`:""}`;
+      const fg=b.querySelector("#m-forget");
+      if(fg)fg.onclick=()=>{if(fg.dataset.armed!=="1"){fg.dataset.armed="1";fg.textContent="Tap again to delete";return}
+        S.core.myMonsters=S.core.myMonsters.filter(x=>x.id!==m.id);commit("core");monSheet()};
+    };
+    selEl.onchange=show;if(sel){selEl.value=sel;show()}
+    const cEl=b.querySelector("#m-count");
+    b.querySelector("#m-minus").onclick=()=>{count=Math.max(1,count-1);cEl.textContent=count};
+    b.querySelector("#m-plus").onclick=()=>{count=Math.min(20,count+1);cEl.textContent=count};
+    b.querySelector("#m-custom").onclick=()=>customSheet();
+    b.querySelector("#m-add").onclick=()=>{const m=selEl.value?monByKey(selEl.value):null;if(!m){selEl.focus();return}
+      addMonsters(m,count,b.querySelector("#m-hp").value==="roll");closeSheet()};
+  });
+}
+function customSheet(){
+  openSheet(`<h2>Create a monster</h2><form class="stack" id="cm">
+    <div class="f"><label for="cm-name">Name</label><input type="text" id="cm-name" placeholder="e.g. Ash Ghoul"></div>
+    <div class="row"><div class="f"><label for="cm-cr">CR</label><input type="text" id="cm-cr" value="1"></div>
+      <div class="f"><label for="cm-ac">AC</label><input type="number" inputmode="numeric" id="cm-ac" value="12"></div>
+      <div class="f"><label for="cm-hp">HP</label><input type="number" inputmode="numeric" id="cm-hp" value="20"></div>
+      <div class="f"><label for="cm-dex">Init bonus</label><input type="number" inputmode="numeric" id="cm-dex" value="0"></div></div>
+    <div class="row"><div class="f"><label for="cm-hd">Hit dice (optional)</label><input type="text" id="cm-hd" placeholder="e.g. 4d8+4"></div>
+      <div class="f"><label for="cm-sp">Speed</label><input type="text" id="cm-sp" value="30 ft"></div></div>
+    <div class="f"><label for="cm-atk">Attacks and abilities</label><textarea id="cm-atk" rows="3" placeholder="e.g. Claws +4, 2d6+2; Screech DC 12"></textarea></div>
+    <div class="foot"><button type="button" class="btn ghost" id="cm-back">Back</button><button class="btn gold">Save monster</button></div></form>`,b=>{
+    setTimeout(()=>b.querySelector("#cm-name").focus(),250);
+    b.querySelector("#cm-back").onclick=()=>monSheet();
+    b.querySelector("#cm").onsubmit=e=>{e.preventDefault();const v=id=>b.querySelector("#"+id).value.trim();
+      if(!v("cm-name")){b.querySelector("#cm-name").focus();return}
+      const m={id:uid(),name:v("cm-name"),cr:v("cm-cr")||"?",ac:+v("cm-ac")||10,hp:Math.max(1,+v("cm-hp")||1),hd:v("cm-hd"),dex:+v("cm-dex")||0,speed:v("cm-sp"),atk:v("cm-atk")};
+      S.core.myMonsters.push(m);commit("core");monSheet("my:"+m.id);};
+  });
+}
+function initSheet(e){
+  const x=combatants().find(c=>c.e.id===e.id);if(!x)return;
+  openSheet(`<h2>${esc(x.p.name)}: initiative</h2><form class="stack" id="if">
+    <input type="number" inputmode="numeric" id="in-v" class="pad-in" value="${e.init??""}" aria-label="Initiative">
+    <div class="foot"><button type="button" class="btn" id="in-roll">Roll d20 ${sg(x.dex)}</button><button class="btn gold">Save</button></div></form>`,b=>{
+    const inp=b.querySelector("#in-v");setTimeout(()=>inp.select(),250);
+    b.querySelector("#in-roll").onclick=()=>{inp.value=d20()+x.dex};
+    b.querySelector("#if").onsubmit=ev=>{ev.preventDefault();const n=parseInt(inp.value,10);e.init=isNaN(n)?null:n;commit("combat");closeSheet()};
+  });
+}
+function infoSheet(e){
+  openSheet(`<h2>${esc(e.name)}</h2><form class="stack" id="mi">
+    <div class="mini"><span>CR <b>${esc(e.cr||"?")}</b></span><span>Init <b>${sg(e.dex||0)}</b></span>${e.hd?`<span>Hit dice <b>${esc(e.hd)}</b></span>`:""}${e.speed?`<span>Speed <b style="font-family:var(--f-body)">${esc(e.speed)}</b></span>`:""}</div>
+    <div class="f"><label for="mi-name">Name</label><input type="text" id="mi-name" value="${esc(e.name)}"></div>
+    <div class="row"><div class="f"><label for="mi-ac">AC</label><input type="number" inputmode="numeric" id="mi-ac" value="${e.ac}"></div>
+      <div class="f"><label for="mi-hp">HP</label><input type="number" inputmode="numeric" id="mi-hp" value="${e.hp}"></div>
+      <div class="f"><label for="mi-max">Max HP</label><input type="number" inputmode="numeric" id="mi-max" value="${e.max}"></div></div>
+    <div class="f"><label for="mi-atk">Attacks and notes</label><textarea id="mi-atk" rows="3">${esc(e.atk)}</textarea></div>
+    <div class="foot"><button type="button" class="btn danger" id="mi-del">Remove from fight</button><button class="btn gold">Save</button></div></form>`,b=>{
+    b.querySelector("#mi").onsubmit=ev=>{ev.preventDefault();const v=id=>b.querySelector("#"+id).value;
+      e.name=v("mi-name").trim()||e.name;e.ac=+v("mi-ac")||0;e.max=Math.max(1,+v("mi-max")||1);e.hp=clamp(+v("mi-hp")||0,0,e.max);e.atk=v("mi-atk");
+      commit("combat");closeSheet()};
+    b.querySelector("#mi-del").onclick=()=>{removeCombatant(e.id);closeSheet()};
+  });
+}
+function removeCombatant(id){
+  const C=S.combat;
+  if(C.cur===id){const o=ordered(),i=o.findIndex(x=>x.e.id===id),nx=o[(i+1)%o.length];C.cur=nx&&nx.e.id!==id?nx.e.id:null}
+  C.list=C.list.filter(e=>e.id!==id);if(!C.list.length){C.cur=null;C.round=1}
+  commit("combat");
+}
+
+/* ---------- Toast + rolls ---------- */
+const toast=document.getElementById("toast");let tt;
+function rollCheck(a){
+  const m=mod(S.me.abil[a]),d=1+Math.floor(Math.random()*20),t=d+m;
+  toast.innerHTML=`<b>${t}</b><span>${a.toUpperCase()} check<br><span class="${d===20?"crit":d===1?"fumble":""}">d20 ${d}${d===20?" natural 20":d===1?" natural 1":""}</span> ${sg(m)}</span>`;
+  toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),3200);
+}
+
+/* ---------- Events ---------- */
+document.getElementById("switch").addEventListener("click",e=>{
+  const b=e.target.closest("[data-m]");if(!b)return;const m=b.dataset.m;
+  if(m!==S.core.mode){S.core.mode=m;commit("core");render();window.scrollTo(0,0)}
+});
+// Swipe on the switch to slide between modes
+(function(){let x0=null;const sw=document.getElementById("switch");
+  sw.addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
+  sw.addEventListener("touchend",e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;
+    if(Math.abs(dx)>30){const O=["dm","player","combat"],i=O.indexOf(S.core.mode),m=O[clamp(i+(dx>0?1:-1),0,2)];if(m!==S.core.mode){S.core.mode=m;commit("core");render()}}});
+})();
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  const act=b.dataset.act,id=b.dataset.id||(b.closest("[data-id]")&&b.closest("[data-id]").dataset.id);
+  const p=id?findP(id):null;
+  switch(act){
+    case "dmg1":damage(p,1);commit(keyFor(id));render();break;
+    case "heal1":heal(p,1);commit(keyFor(id));render();break;
+    case "pad":padSheet(p);break;
+    case "conds":condSheet(p);break;
+    case "items":itemsSheet(p);break;
+    case "edit":editSheet(p,false);break;
+    case "add":editSheet(P({name:""}),true);break;
+    case "campEdit":campSheet();break;
+    case "roll":rollCheck(b.dataset.a);break;
+    case "slots":slotSheet(p);break;
+    case "newCamp":newCampSheet();break;
+    case "newMe":editSheet(P({id:"me",name:""}),true);break;
+    case "cParty":addParty();break;
+    case "cMon":monSheet();break;
+    case "cNext":step(1);break;
+    case "cPrev":step(-1);break;
+    case "cRoll":S.combat.list.forEach(e=>{if(e.kind==="m")e.init=d20()+(e.dex||0)});commit("combat");render();break;
+    case "cInit":{const e=S.combat.list.find(x=>x.id===b.dataset.cid);if(e)initSheet(e);break;}
+    case "cInfo":{const e=S.combat.list.find(x=>x.id===b.dataset.cid);if(e)infoSheet(e);break;}
+    case "cDel":removeCombatant(b.dataset.cid);render();break;
+    case "cEnd":
+      if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to end";setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="End fight"}},3000);break}
+      S.combat={round:1,cur:null,list:[]};commit("combat");render();break;
+    case "spells":spellSheet(p);break;
+    case "pip":{const s=slotsOf(p)[+b.dataset.lv];s.used=clamp(s.used+(b.dataset.on==="1"?1:-1),0,s.max);commit(keyFor(id));render();break;}
+    case "rest":p.hp=p.max;p.temp=0;p.conds=p.conds.filter(c=>c!=="Unconscious");restoreSlots(p);commit(keyFor(id));render();break;
+    case "longrest":camp().players.forEach(q=>{q.hp=q.max;q.temp=0;q.conds=q.conds.filter(c=>c!=="Unconscious");restoreSlots(q)});commit(campKey());render();break;
+    case "iq+":case "iq-":case "idel":{
+      const row=b.closest("[data-item]"),q=findP(row.dataset.id),i=q.items.find(x=>x.id===row.dataset.item);
+      if(act==="idel")q.items=q.items.filter(x=>x!==i);else i.q=Math.max(1,i.q+(act==="iq+"?1:-1));
+      commit(keyFor(q.id));
+      if(sheet.classList.contains("on"))itemsSheet(q);else render();
+      break;}
+  }
+});
+document.addEventListener("submit",e=>{
+  const f=e.target.closest('[data-form="additem"]');if(!f)return;e.preventDefault();
+  const inp=f.querySelector("input"),n=inp.value.trim();if(!n)return;
+  const p=findP(f.dataset.id);
+  const m=n.match(/^(.*?)\s*[x×]\s*(\d+)$/i);
+  p.items.push(m?it(m[1],+m[2]):it(n));commit(keyFor(p.id));
+  if(sheet.classList.contains("on")){itemsSheet(p);setTimeout(()=>{const x=document.getElementById("sheet-newitem");x&&x.focus()},50)}
+  else{render();const x=document.getElementById("me-newitem");x&&x.focus()}
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="campSel"){
+    if(e.target.value==="__new"){e.target.value=S.core.active;newCampSheet();return}
+    S.core.active=e.target.value;commit("core");render();return;
+  }
+  if(e.target.matches("[data-iname]")){const row=e.target.closest("[data-item]"),q=findP(row.dataset.id),i=q.items.find(x=>x.id===row.dataset.item);
+    i.n=e.target.value.trim()||i.n;commit(keyFor(q.id));}
+});
+let nt;
+document.addEventListener("input",e=>{
+  if(e.target.dataset.notes==="me"){S.me.notes=e.target.value;clearTimeout(nt);nt=setTimeout(()=>commit("me"),500)}
+});
+
+// Keep the screen awake at the table where the phone allows it
+async function wake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")await navigator.wakeLock.request("screen")}catch(e){}}
+document.addEventListener("visibilitychange",wake);wake();
+
+render();
+setTimeout(connect,0);
+})();
+</script>
+
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body>
+</html>
