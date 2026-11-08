@@ -1324,31 +1324,56 @@ function removeCombatant(id){
 
 /* ---------- Toast + rolls ---------- */
 
-/* ---------- Live table: DM hosts, players join with a code (WebRTC via PeerJS) ---------- */
-const LIVE={role:null,code:null,campId:null,peer:null,conns:new Set(),conn:null,camp:{id:"live",name:"",players:[]},combat:{round:1,cur:null,list:[]},snap:{},status:"",remoteTick:false};
+/* ---------- Live table: DM hosts, players join with a code. Messages go through public MQTT relays,
+   so phones can be on any Wi-Fi or mobile network. Two relays are used side by side for redundancy. ---------- */
+const LIVE={role:null,code:null,campId:null,clients:[],seen:{},camp:{id:"live",name:"",players:[]},combat:{round:1,cur:null,list:[]},snap:{},status:"",remoteTick:false,lastRx:0,me:null};
 const isClient=()=>LIVE.role==="client";
 const LIVE_OK=(()=>{try{return window.self===window.top}catch(e){return false}})();
 function CB(){return isClient()?LIVE.combat:S.combat}
-const PEER_PREFIX="tablekeeper-tbl-";
+const RELAYS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt"];
+const TOPIC=code=>"tablekeeper-dnd/v1/"+code;
 const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const newCode=()=>Array.from({length:6},()=>CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]).join("");
-let peerLib=null;
-function loadPeer(){
-  if(window.Peer)return Promise.resolve(window.Peer);
-  if(peerLib)return peerLib;
-  peerLib=new Promise((ok,bad)=>{const sc=document.createElement("script");sc.src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
-    sc.onload=()=>window.Peer?ok(window.Peer):bad(new Error("load"));sc.onerror=()=>{peerLib=null;bad(new Error("load"))};document.head.appendChild(sc)});
-  return peerLib;
+let mqttLib=null;
+function loadMqtt(){
+  if(window.mqtt)return Promise.resolve(window.mqtt);
+  if(mqttLib)return mqttLib;
+  mqttLib=new Promise((ok,bad)=>{const sc=document.createElement("script");sc.src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js";
+    sc.onload=()=>window.mqtt?ok(window.mqtt):bad(new Error("load"));sc.onerror=()=>{mqttLib=null;bad(new Error("load"))};document.head.appendChild(sc)});
+  return mqttLib;
 }
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
 function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function setLive(st){LIVE.status=st;livePill();const el=document.getElementById("liveStatus");if(el)el.textContent=st}
+function setLive(st){if(LIVE.status===st)return;LIVE.status=st;livePill();refreshLiveSheet()}
+const relayUp=()=>LIVE.clients.some(c=>c.connected);
+function openRelays(subs,onMsg,onUp){
+  const m=window.mqtt;
+  LIVE.clients=RELAYS.map(url=>{
+    const c=m.connect(url,{clientId:"tk_"+uid()+uid(),clean:true,keepalive:30,reconnectPeriod:3000,connectTimeout:10000});
+    c.on("connect",()=>{c.subscribe(subs,{qos:1});onUp&&onUp(c)});
+    c.on("message",(t,buf)=>{
+      const txt=new TextDecoder().decode(buf);
+      if(!txt){onMsg(t,null);return}
+      let d;try{d=JSON.parse(txt)}catch(e){return}
+      onMsg(t,d);
+    });
+    c.on("offline",()=>relayCheck());c.on("close",()=>relayCheck());c.on("error",()=>{});
+    return c;
+  });
+}
+function pub(topic,obj,retain){const s=obj==null?"":JSON.stringify(obj);LIVE.clients.forEach(c=>{if(c.connected)c.publish(topic,s,{qos:1,retain:!!retain})})}
+function closeRelays(){LIVE.clients.forEach(c=>{try{c.end(false)}catch(e){}});LIVE.clients=[]}
+function relayCheck(){
+  if(!LIVE.role)return;
+  if(!relayUp()){setLive("offline");render()}
+}
+const playersOnline=()=>{const now=Date.now();return Object.values(LIVE.seen).filter(t=>now-t<45000).length};
 function livePill(){
   const el=document.getElementById("livepill");if(!el)return;
   if(!LIVE.role){el.hidden=true;return}
   el.hidden=false;el.className="livepill"+(LIVE.status==="ok"?" ok":"");
-  const lbl={ok:"",starting:"Starting",taken:"Waiting",reconnecting:"Reconnecting",connecting:"Connecting",finding:"Connecting",stuck:"Can't reach DM",missing:"Not found"}[LIVE.status]||"Connecting";
-  el.textContent=LIVE.role==="host"?(LIVE.status==="ok"?`Live ${LIVE.code} · ${LIVE.conns.size}`:`${lbl} ${LIVE.code}`):(LIVE.status==="ok"?`Joined ${LIVE.code}`:lbl);
+  const lbl={connecting:"Connecting",finding:"Finding table",missing:"Not found",dmoffline:"DM offline",ended:"Ended",offline:"No internet"}[LIVE.status]||"Connecting";
+  el.textContent=LIVE.role==="host"?(LIVE.status==="ok"?`Live ${LIVE.code} · ${playersOnline()}`:`${lbl} ${LIVE.code}`):(LIVE.status==="ok"?`Joined ${LIVE.code}`:lbl);
 }
 /* Host */
 function publicState(){
@@ -1360,31 +1385,21 @@ function publicState(){
 }
 let bTimer;
 function scheduleBroadcast(){clearTimeout(bTimer);bTimer=setTimeout(broadcast,120)}
-function broadcast(){if(LIVE.role!=="host")return;const st=publicState();LIVE.conns.forEach(c=>{try{if(c.open)c.send(st)}catch(e){}})}
-async function goLive(code,campId,tries,fresh){
-  tries=tries||0;
-  let PeerC;try{PeerC=await loadPeer()}catch(e){toastMsg("Couldn't start a live table. Check you're online and try again.");stopLive();return}
+function broadcast(){if(LIVE.role!=="host")return;pub(TOPIC(LIVE.code)+"/state",publicState(),true)}
+async function goLive(code,campId){
+  try{await loadMqtt()}catch(e){toastMsg("Couldn't start a live table. Check you're online and try again.");return}
   stopLive(true);
-  LIVE.role="host";LIVE.code=code;LIVE.campId=campId;setLive("starting");
-  const peer=new PeerC(PEER_PREFIX+code.toLowerCase());LIVE.peer=peer;
-  peer.on("open",()=>{setLive("ok");lsSet("tk.host",{code,campId});lsSet("tk.join",null);refreshLiveSheet();render()});
-  peer.on("connection",conn=>{
-    conn.on("open",()=>{LIVE.conns.add(conn);livePill();conn.send(publicState());refreshLiveSheet()});
-    conn.on("data",d=>hostData(d));
-    conn.on("close",()=>{LIVE.conns.delete(conn);livePill();refreshLiveSheet()});
-    conn.on("error",()=>{LIVE.conns.delete(conn);livePill()});
-  });
-  peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
-  peer.on("error",err=>{
-    if(err&&err.type==="unavailable-id"){
-      peer.destroy();
-      // A brand-new code that clashes: just pick another. A resumed code: keep it and wait, so players' code still works.
-      if(fresh&&tries<3){const c=newCode();goLive(c,campId,tries+1,true);return}
-      LIVE.role="host";LIVE.code=code;LIVE.campId=campId;setLive("taken");refreshLiveSheet();
-      if(tries<24)setTimeout(()=>{if(LIVE.role==="host"&&LIVE.code===code&&LIVE.status==="taken")goLive(code,campId,tries+1)},5000);
-    }
-    else if(err&&(err.type==="network"||err.type==="server-error"||err.type==="socket-error")){setLive("reconnecting")}
-  });
+  LIVE.role="host";LIVE.code=code;LIVE.campId=campId;LIVE.seen={};setLive("connecting");
+  lsSet("tk.host",{code,campId});lsSet("tk.join",null);
+  const T=TOPIC(code);
+  openRelays([T+"/up",T+"/hi"],(t,d)=>{
+    if(!d)return;
+    if(t===T+"/hi"&&typeof d.id==="string"){LIVE.seen[d.id]=Date.now();livePill();refreshLiveSheet();if(d.need)scheduleBroadcast()}
+    else if(t===T+"/up")hostData(d);
+  },c=>{setLive("ok");c.publish(T+"/state",JSON.stringify(publicState()),{qos:1,retain:true});render()});
+  clearInterval(LIVE.beat);
+  LIVE.beat=setInterval(()=>{broadcast();livePill();refreshLiveSheet()},20000);
+  render();
 }
 function hostData(d){
   if(!d||d.t!=="players"||!Array.isArray(d.list))return;
@@ -1398,59 +1413,59 @@ function hostData(d){
   commit("camp_"+LIVE.campId);LIVE.remoteTick=true;render();
 }
 function stopLive(quiet){
-  if(LIVE.peer){try{LIVE.peer.destroy()}catch(e){}}
-  LIVE.peer=null;LIVE.conns=new Set();LIVE.conn=null;LIVE.role=null;LIVE.code=null;LIVE.status="";
-  clearTimeout(rejoinT);clearTimeout(LIVE.openT);
+  if(LIVE.role==="host"&&!quiet&&LIVE.code){pub(TOPIC(LIVE.code)+"/state",null,true)}  // clears the table for players
+  const old=LIVE.clients;LIVE.clients=[];setTimeout(()=>old.forEach(c=>{try{c.end(false)}catch(e){}}),400);
+  clearInterval(LIVE.beat);clearInterval(LIVE.hi);clearTimeout(LIVE.findT);
+  LIVE.role=null;LIVE.code=null;LIVE.status="";LIVE.seen={};
   if(!quiet){lsSet("tk.host",null);lsSet("tk.join",null);render()}
 }
 /* Player */
-let rejoinT;
 async function joinTable(code){
   code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
   if(code.length!==6){toastMsg("Table codes are 6 letters and numbers.");return}
-  let PeerC;try{PeerC=await loadPeer()}catch(e){toastMsg("Couldn't connect. Check you're online and try again.");return}
+  try{await loadMqtt()}catch(e){toastMsg("Couldn't connect. Check you're online and try again.");return}
   stopLive(true);
-  LIVE.role="client";LIVE.code=code;LIVE.camp={id:"live",name:"",players:[]};LIVE.combat={round:1,cur:null,list:[]};LIVE.snap={};
+  LIVE.role="client";LIVE.code=code;LIVE.camp={id:"live",name:"",players:[]};LIVE.combat={round:1,cur:null,list:[]};LIVE.snap={};LIVE.lastRx=0;
+  LIVE.me=LIVE.me||("p_"+uid()+uid());
   lsSet("tk.join",code);lsSet("tk.host",null);setLive("connecting");render();
-  const peer=new PeerC();LIVE.peer=peer;
-  peer.on("open",()=>{setLive("finding");render();connectHost()});
-  peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
-  peer.on("error",err=>{
-    if(err&&err.type==="peer-unavailable"){setLive("missing");render();clearTimeout(rejoinT);rejoinT=setTimeout(()=>{if(isClient()&&LIVE.peer===peer)connectHost()},5000)}
+  const T=TOPIC(code);
+  const hi=need=>pub(T+"/hi",{id:LIVE.me,need:!!need});
+  openRelays([T+"/state"],(t,d)=>{
+    if(t!==T+"/state")return;
+    if(!d){if(LIVE.camp.name){setLive("ended");render()}return}
+    LIVE.lastRx=Date.now();clientData(d);
+  },()=>{
+    if(LIVE.status!=="ok"){setLive("finding");render()}
+    hi(true);
+    clearTimeout(LIVE.findT);
+    LIVE.findT=setTimeout(()=>{if(isClient()&&!LIVE.lastRx){setLive("missing");render()}},7000);
   });
-}
-function connectHost(){
-  if(!isClient()||!LIVE.peer)return;
-  if(LIVE.peer.disconnected&&!LIVE.peer.destroyed){try{LIVE.peer.reconnect()}catch(e){}}
-  if(LIVE.conn){try{LIVE.conn.close()}catch(e){}}
-  const conn=LIVE.peer.connect(PEER_PREFIX+LIVE.code.toLowerCase(),{reliable:true});LIVE.conn=conn;
-  clearTimeout(LIVE.openT);
-  LIVE.openT=setTimeout(()=>{if(LIVE.conn===conn&&!conn.open&&isClient()){setLive("stuck");render();clearTimeout(rejoinT);rejoinT=setTimeout(connectHost,8000)}},15000);
-  conn.on("open",()=>{clearTimeout(LIVE.openT);setLive("ok");conn.send({t:"hello"})});
-  conn.on("data",d=>clientData(d));
-  const lost=()=>{if(LIVE.conn!==conn||!isClient())return;setLive("reconnecting");render();clearTimeout(rejoinT);rejoinT=setTimeout(connectHost,3000)};
-  conn.on("close",lost);conn.on("error",lost);
+  clearInterval(LIVE.hi);
+  LIVE.hi=setInterval(()=>{
+    if(!isClient())return;
+    hi(false);
+    if(LIVE.lastRx&&LIVE.status==="ok"&&Date.now()-LIVE.lastRx>55000){setLive("dmoffline");render()}
+  },15000);
 }
 function clientData(d){
-  if(!d||d.t!=="state")return;
+  if(!d||d.t!=="state"||!d.camp||!Array.isArray(d.camp.players))return;
   const firstState=!LIVE.camp.name;
   LIVE.camp.name=d.camp.name;LIVE.camp.id=d.camp.id;
   // Merge in place so open sheets keep editing the same objects
   const cur=new Map(LIVE.camp.players.map(p=>[p.id,p]));
   LIVE.camp.players=d.camp.players.map(np=>{const o=cur.get(np.id);if(o){for(const k in o)if(!(k in np))delete o[k];return Object.assign(o,np)}return np});
   LIVE.snap={};LIVE.camp.players.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
-  LIVE.combat=d.combat;
-  setLive("ok");LIVE.remoteTick=!firstState;render();
-  if(sheet.classList.contains("on"))refreshOpenPips();
+  LIVE.combat=d.combat||{round:1,cur:null,list:[]};
+  clearTimeout(LIVE.findT);
+  const was=LIVE.status;setLive("ok");LIVE.remoteTick=!firstState&&was==="ok";render();
 }
 function sendChanges(){
-  if(!LIVE.conn||!LIVE.conn.open)return;
+  if(!isClient()||!relayUp())return;
   const changed=LIVE.camp.players.filter(p=>LIVE.snap[p.id]!==JSON.stringify(p));
   if(!changed.length)return;
   changed.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
-  try{LIVE.conn.send({t:"players",list:changed})}catch(e){}
+  pub(TOPIC(LIVE.code)+"/up",{t:"players",list:changed});
 }
-function refreshOpenPips(){}
 /* Views for a joined player */
 function joinCard(){
   if(!LIVE_OK)return "";
@@ -1458,14 +1473,16 @@ function joinCard(){
     <div class="join-row"><input type="text" id="join-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Table code"><button class="btn gold">Join</button></div></form>`;
 }
 function liveBanner(){
-  const st=LIVE.status;
+  const st=LIVE.status,code=`<b>${esc(LIVE.code||"")}</b>`;
   const msg=st==="ok"?`Live from the DM${LIVE.camp.name?": <b>"+esc(LIVE.camp.name)+"</b>":""}`
-    :st==="missing"?`No table found for <b>${esc(LIVE.code)}</b>. Check the code, and that the DM's app is open with Go live on.`
-    :st==="connecting"?"Connecting to the table service…"
-    :st==="finding"?`Found table <b>${esc(LIVE.code)}</b>. Connecting to the DM's device…`
-    :st==="stuck"?`Can't reach the DM's device. Put both phones on the same Wi-Fi, and keep the DM's app open on screen. Still trying…`
-    :"Lost connection. Reconnecting…";
-  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><div class="banner-acts">${st!=="ok"?`<button class="linkbtn" data-act="retry">Try again</button>`:""}<button class="linkbtn" data-act="leave">Leave</button></div></div>`;
+    :st==="connecting"?"Connecting to the live service…"
+    :st==="finding"?`Looking for table ${code}…`
+    :st==="missing"?`No table found for ${code}. Check the code, and ask the DM to tap Go live. This keeps checking.`
+    :st==="dmoffline"?`The DM's app looks offline. Ask them to open Table Keeper. Changes sync again when they're back.`
+    :st==="ended"?`The DM has ended this table.`
+    :st==="offline"?`This phone can't reach the internet. Reconnecting…`
+    :"Connecting…";
+  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><div class="banner-acts">${st!=="ok"&&st!=="ended"?`<button class="linkbtn" data-act="retry">Try again</button>`:""}<button class="linkbtn" data-act="leave">Leave</button></div></div>`;
 }
 function renderJoinedParty(){
   const ps=LIVE.camp.players;
@@ -1491,21 +1508,21 @@ function renderJoinedCombat(o,C){
       <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button></div></div></article>`}).join("")+`</div>`;
 }
 /* Host sheet */
-function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const w=document.getElementById("liveWarn");if(w)w.hidden=LIVE.status!=="taken";const el=document.getElementById("liveCount");if(el)el.textContent=LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}
+function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const w=document.getElementById("liveWarn");if(w)w.hidden=LIVE.status==="ok"||LIVE.role!=="host";const el=document.getElementById("liveCount");if(el){const n=playersOnline();el.textContent=n===1?"1 player connected":n+" players connected"}}
 function liveSheet(){
   let code=LIVE.code;
   if(LIVE.role!=="host"){
     const c=S.core.camps.find(x=>x.id===S.core.active);if(!c)return;
-    code=newCode();LIVE.campId=c.id;goLive(code,c.id,0,true);
+    code=newCode();LIVE.campId=c.id;goLive(code,c.id);
   }
   openSheet(`<h2>Live table</h2><div class="stack">
     <div class="code-big num" id="liveCode">${esc(code||"")}</div>
-    <p class="hint" style="margin:0;color:var(--muted)">Players open Table Keeper, go to <b>Player</b>, and type this code under <b>Join a live table</b>. They'll see the party and the combat order update live. Monster HP stays on your screen only.</p>
-    <p class="hint" id="liveWarn" style="margin:0;color:var(--warn)" ${LIVE.status==="taken"?"":"hidden"}>This code is still open on another tab or device. Close the app there, or tap New code.</p>
-    <p class="mini" style="margin:0"><span id="liveCount">${LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}</span></p>
+    <p class="hint" style="margin:0;color:var(--muted)">Players open Table Keeper, go to <b>Player</b>, and type this code under <b>Join a live table</b>. It works on any Wi-Fi or mobile data. They'll see the party and the combat order update live. Monster HP stays on your screen only.</p>
+    <p class="hint" id="liveWarn" style="margin:0;color:var(--warn)" ${LIVE.status==="ok"?"hidden":""}>Connecting to the live service… Check this device is online.</p>
+    <p class="mini" style="margin:0"><span id="liveCount">${playersOnline()===1?"1 player connected":playersOnline()+" players connected"}</span></p>
     <p class="hint" style="margin:0">Sharing: <b>${esc((S.core.camps.find(x=>x.id===LIVE.campId)||{}).name||"")}</b>. Keep this app open while you play.</p>
     <div class="foot"><button class="btn danger" id="liveStop">Stop live table</button><button class="btn" id="liveNew">New code</button><button class="btn gold" id="liveDone">Done</button></div></div>`,b=>{
-    b.querySelector("#liveNew").onclick=()=>{const c=newCode();goLive(c,LIVE.campId,0,true);b.querySelector("#liveCode").textContent=c;b.querySelector("#liveWarn").hidden=true};
+    b.querySelector("#liveNew").onclick=()=>{const old=LIVE.code,cid=LIVE.campId;if(old)pub(TOPIC(old)+"/state",null,true);const c=newCode();goLive(c,cid);b.querySelector("#liveCode").textContent=c;b.querySelector("#liveWarn").hidden=true};
     b.querySelector("#liveStop").onclick=()=>{stopLive();closeSheet()};
     b.querySelector("#liveDone").onclick=closeSheet;
   });
@@ -1608,14 +1625,9 @@ async function wake(){try{if(navigator.wakeLock&&document.visibilityState==="vis
 document.addEventListener("visibilitychange",wake);wake();
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState!=="visible"||!LIVE.role)return;
-  const pr=LIVE.peer;
-  if(LIVE.role==="host"){
-    if(!pr||pr.destroyed)goLive(LIVE.code,LIVE.campId);
-    else if(pr.disconnected){try{pr.reconnect()}catch(e){}}
-  }else if(isClient()){
-    if(!pr||pr.destroyed)joinTable(LIVE.code);
-    else if(!LIVE.conn||!LIVE.conn.open){clearTimeout(rejoinT);connectHost()}
-  }
+  if(!LIVE.clients.length){LIVE.role==="host"?goLive(LIVE.code,LIVE.campId):joinTable(LIVE.code);return}
+  LIVE.clients.forEach(c=>{if(!c.connected){try{c.reconnect()}catch(e){}}});
+  if(LIVE.role==="host")scheduleBroadcast();else pub(TOPIC(LIVE.code)+"/hi",{id:LIVE.me,need:true});
 });
 
 render();

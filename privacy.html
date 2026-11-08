@@ -20,7 +20,7 @@ ul{padding-left:20px}
 <body>
 <main>
 <h1>Table Keeper Privacy Policy</h1>
-<p class="muted">Last updated 8 November 2026</p>
+<p class="muted">Last updated 8 November 2026 (live tables now use relays)</p>
 
 <p>Table Keeper is a free tool for running Dungeons &amp; Dragons games. It is built to keep your data on your own device. There are no accounts, no adverts and no analytics.</p>
 
@@ -28,15 +28,15 @@ ul{padding-left:20px}
 <p>Your campaigns, characters, monsters and notes are saved only in your device's browser storage. We never receive them. If you clear the app's data or uninstall it, they are deleted.</p>
 
 <h2>Live tables</h2>
-<p>When a DM starts a live table, other players can join with a 6-character code. Party details (names, stats, HP, conditions, spell slots, items and the initiative order) are then sent directly between the devices at the table.</p>
+<p>When a DM starts a live table, other players can join with a 6-character code. Party details (names, stats, HP, conditions, spell slots, items and the initiative order) are then shared between the devices at the table.</p>
 <ul>
-<li>To connect, devices use the free PeerJS connection service (peerjs.com) and public STUN servers. These see your device's IP address and the table code while making the connection. They don't receive your game data.</li>
+<li>These updates travel through two free public messaging relays, EMQX (broker.emqx.io) and HiveMQ (broker.hivemq.com), so players can join from any Wi-Fi or mobile network. The relays pass the messages on and keep the latest party snapshot for that table code until the DM ends the table. Anyone who knows the code could read it, so the code works like a password.</li>
 <li>Monster HP, AC and attacks stay on the DM's device.</li>
 <li>Anyone with the table code can view and edit the party while the table is live. Only share the code with people at your game.</li>
 </ul>
 
 <h2>Other services</h2>
-<p>The app loads its fonts from Google Fonts and the live-table library from unpkg.com. Like any website, these services receive your IP address when you download those files. We don't share any other information with them.</p>
+<p>The app loads its fonts from Google Fonts and the live-table library from unpkg.com, and live tables use the relays named above. Like any website, these services receive your IP address when you download those files. We don't share any other information with them.</p>
 
 <h2>Children</h2>
 <p>The app doesn't collect personal information from anyone, including children.</p>
