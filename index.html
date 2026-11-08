@@ -256,6 +256,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .banner{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--warn);background:var(--surface);color:var(--muted);font-size:.9rem}
 .banner.ok{border-color:var(--heal)}
 .banner b{color:var(--ink)}
+.join-add{display:flex;gap:8px;flex-wrap:wrap;max-width:720px;margin-inline:auto}
 .claim{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-width:720px;margin-inline:auto}
 .claim .tog[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
 .code-big{font-size:2.6rem;letter-spacing:.24em;text-align:center;color:var(--brass);background:var(--bg);border:1px dashed var(--brass);border-radius:12px;padding:14px 8px;user-select:all}
@@ -429,7 +430,7 @@ function renderDM(){
   let h=`<div class="bar"><div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>
     <button class="btn" data-act="campEdit">Campaign</button>${LIVE_OK?`<button class="btn ${LIVE.role==="host"?"live-on":""}" data-act="live">${LIVE.role==="host"?"Live · "+LIVE.code:"Go live"}</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
   if(!ps.length){
-    return h+`<div class="empty"><h2>No players yet</h2><p>Add each hero at the table to see their HP, stats and kit on one screen.</p><button class="btn gold" data-act="add">+ Add first player</button></div>`;
+    return h+`<div class="empty"><h2>No players yet</h2><p>Add each hero here, or tap Go live and let players join with the code and add their own.</p><button class="btn gold" data-act="add">+ Add first player</button></div>`;
   }
   h+=`<div class="summary"><span><b class="num">${ps.length}</b> heroes</span><span>Party HP <b class="num">${totHp}/${totMax}</b></span>${down?`<span style="color:var(--blood)"><b class="num" style="color:var(--blood)">${down}</b> down</span>`:""}<button class="linkbtn" data-act="longrest">Long rest all</button></div>`;
   h+=`<div class="grid">`+ps.map(card).join("")+`</div>`;
@@ -989,7 +990,7 @@ function spellSheet(p){
   onClose=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean)};
 }
 function editSheet(p,isNew){
-  openSheet(`<h2>${isNew?"New player":"Edit "+esc(p.name)}</h2><form class="stack" id="ef">
+  openSheet(`<h2>${isNew?(isClient()?"Your character":"New player"):"Edit "+esc(p.name)}</h2><form class="stack" id="ef">
     <div class="f"><label for="e-name">Name</label><input type="text" id="e-name" value="${esc(p.name)}"></div>
     <div class="row"><div class="f"><label for="e-race">Race</label><select class="plain" id="e-race">${optList(Object.keys(RACES),p.race)}</select></div>
       <div class="f"><label for="e-cls">Class</label><select class="plain" id="e-cls">${optList(Object.keys(CLASSES),p.cls)}</select></div>
@@ -1029,7 +1030,7 @@ function editSheet(p,isNew){
       p.ac=+v("e-ac")||0;p.max=Math.max(1,+v("e-max")||1);p.hp=clamp(+v("e-hp")||0,0,p.max);p.speed=+v("e-speed")||0;
       ABIL.forEach(a=>p.abil[a]=+v("e-"+a)||10);if(b.querySelector("#e-notes"))p.notes=v("e-notes");
       p.ex=false;
-      if(isNew){if(p.id==="me")S.me=p;else camp().players.push(p);}
+      if(isNew){if(p.id==="me")S.me=p;else{camp().players.push(p);if(isClient())lsSet("tk.claim",p.id)}}
       commit(keyFor(p.id));closeSheet();};
     const x=b.querySelector("[data-x]");
     if(x)x.onclick=()=>{
@@ -1380,7 +1381,12 @@ async function goLive(code,campId,tries){
 function hostData(d){
   if(!d||d.t!=="players"||!Array.isArray(d.list))return;
   const c=S.camps[LIVE.campId];if(!c)return;
-  d.list.forEach(np=>{const i=c.players.findIndex(p=>p.id===np.id);if(i>=0&&np&&typeof np==="object")Object.assign(c.players[i],np,{id:c.players[i].id})});
+  d.list.forEach(np=>{
+    if(!np||typeof np!=="object"||typeof np.id!=="string")return;
+    const i=c.players.findIndex(p=>p.id===np.id);
+    if(i>=0)Object.assign(c.players[i],np,{id:c.players[i].id});
+    else if(c.players.length<12)c.players.push(P(Object.assign({},np,{name:String(np.name||"New hero").slice(0,60),ex:false})));
+  });
   commit("camp_"+LIVE.campId);LIVE.remoteTick=true;render();
 }
 function stopLive(quiet){
@@ -1446,12 +1452,13 @@ function liveBanner(){
 }
 function renderJoinedParty(){
   const ps=LIVE.camp.players;
-  return liveBanner()+(ps.length?`<div class="grid">`+ps.map(card).join("")+`</div>`:`<div class="empty"><h2>No heroes yet</h2><p>The DM hasn't added any players to this campaign.</p></div>`);
+  return liveBanner()+(ps.length?`<div class="grid">`+ps.map(card).join("")+`</div>`:`<div class="empty"><h2>No heroes yet</h2><p>Go to the Player tab to add your character to this table.</p></div>`);
 }
 function renderJoinedMe(){
   const ps=LIVE.camp.players,mine=lsGet("tk.claim"),p=ps.find(x=>x.id===mine);
-  const pick=`<div class="claim"><span class="lbl">Who are you playing?</span><div class="togs">${ps.map(x=>`<button class="tog" aria-pressed="${p&&p.id===x.id}" data-act="claim" data-id="${x.id}">${esc(x.name)}</button>`).join("")||`<span class="hint">Waiting for the DM to add heroes.</span>`}</div></div>`;
-  return liveBanner()+pick+(p?renderSheet(p):"");
+  const add=LIVE.status==="ok"?`<div class="join-add"><button class="btn gold" data-act="joinAdd">+ Add my character</button>${S.me?`<button class="btn" data-act="joinBring">Bring in ${esc(S.me.name)}</button>`:""}</div>`:"";
+  const pick=`<div class="claim"><span class="lbl">Who are you playing?</span>${ps.length?`<div class="togs">${ps.map(x=>`<button class="tog" aria-pressed="${p&&p.id===x.id}" data-act="claim" data-id="${x.id}">${esc(x.name)}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">No heroes at this table yet. Add yours and it appears on the DM's screen.</p>`}${p?"":add}</div>`;
+  return liveBanner()+pick+(p?renderSheet(p)+`<div class="join-add" style="margin-top:14px"><button class="linkbtn" data-act="joinAdd">+ Add another character</button>${S.me&&!ps.some(x=>x.name===S.me.name)?`<button class="linkbtn" data-act="joinBring">Bring in ${esc(S.me.name)}</button>`:""}</div>`:"");
 }
 function renderJoinedCombat(o,C){
   let h=liveBanner();
@@ -1526,6 +1533,8 @@ document.addEventListener("click",e=>{
     case "livepill":if(LIVE.role==="host")liveSheet();else{S.core.mode="player";render()}break;
     case "leave":stopLive();lsSet("tk.claim",null);break;
     case "claim":lsSet("tk.claim",b.dataset.id);render();break;
+    case "joinAdd":editSheet(P({name:""}),true);break;
+    case "joinBring":{if(!S.me||!isClient())break;const np=JSON.parse(JSON.stringify(S.me));np.id=uid();np.ex=false;LIVE.camp.players.push(np);lsSet("tk.claim",np.id);sendChanges();render();break;}
     case "newMe":editSheet(P({id:"me",name:""}),true);break;
     case "cParty":addParty();break;
     case "cMon":monSheet();break;
