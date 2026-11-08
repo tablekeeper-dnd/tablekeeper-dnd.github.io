@@ -255,6 +255,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .join-row input{flex:1;min-width:0;font-family:var(--f-num);font-size:1.3rem;letter-spacing:.2em;text-transform:uppercase;text-align:center}
 .banner{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--warn);background:var(--surface);color:var(--muted);font-size:.9rem}
 .banner.ok{border-color:var(--heal)}
+.banner-acts{display:flex;gap:12px;flex:none}
 .banner b{color:var(--ink)}
 .join-add{display:flex;gap:8px;flex-wrap:wrap;max-width:720px;margin-inline:auto}
 .claim{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-width:720px;margin-inline:auto}
@@ -1346,7 +1347,8 @@ function livePill(){
   const el=document.getElementById("livepill");if(!el)return;
   if(!LIVE.role){el.hidden=true;return}
   el.hidden=false;el.className="livepill"+(LIVE.status==="ok"?" ok":"");
-  el.textContent=LIVE.role==="host"?`Live ${LIVE.code} · ${LIVE.conns.size}`:(LIVE.status==="ok"?`Joined ${LIVE.code}`:"Reconnecting");
+  const lbl={ok:"",starting:"Starting",taken:"Waiting",reconnecting:"Reconnecting",connecting:"Connecting",finding:"Connecting",stuck:"Can't reach DM",missing:"Not found"}[LIVE.status]||"Connecting";
+  el.textContent=LIVE.role==="host"?(LIVE.status==="ok"?`Live ${LIVE.code} · ${LIVE.conns.size}`:`${lbl} ${LIVE.code}`):(LIVE.status==="ok"?`Joined ${LIVE.code}`:lbl);
 }
 /* Host */
 function publicState(){
@@ -1359,7 +1361,7 @@ function publicState(){
 let bTimer;
 function scheduleBroadcast(){clearTimeout(bTimer);bTimer=setTimeout(broadcast,120)}
 function broadcast(){if(LIVE.role!=="host")return;const st=publicState();LIVE.conns.forEach(c=>{try{if(c.open)c.send(st)}catch(e){}})}
-async function goLive(code,campId,tries){
+async function goLive(code,campId,tries,fresh){
   tries=tries||0;
   let PeerC;try{PeerC=await loadPeer()}catch(e){toastMsg("Couldn't start a live table. Check you're online and try again.");stopLive();return}
   stopLive(true);
@@ -1374,7 +1376,13 @@ async function goLive(code,campId,tries){
   });
   peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
   peer.on("error",err=>{
-    if(err&&err.type==="unavailable-id"){peer.destroy();if(tries<4)setTimeout(()=>goLive(code,campId,tries+1),3000);else goLive(newCode(),campId)}
+    if(err&&err.type==="unavailable-id"){
+      peer.destroy();
+      // A brand-new code that clashes: just pick another. A resumed code: keep it and wait, so players' code still works.
+      if(fresh&&tries<3){const c=newCode();goLive(c,campId,tries+1,true);return}
+      LIVE.role="host";LIVE.code=code;LIVE.campId=campId;setLive("taken");refreshLiveSheet();
+      if(tries<24)setTimeout(()=>{if(LIVE.role==="host"&&LIVE.code===code&&LIVE.status==="taken")goLive(code,campId,tries+1)},5000);
+    }
     else if(err&&(err.type==="network"||err.type==="server-error"||err.type==="socket-error")){setLive("reconnecting")}
   });
 }
@@ -1392,7 +1400,7 @@ function hostData(d){
 function stopLive(quiet){
   if(LIVE.peer){try{LIVE.peer.destroy()}catch(e){}}
   LIVE.peer=null;LIVE.conns=new Set();LIVE.conn=null;LIVE.role=null;LIVE.code=null;LIVE.status="";
-  clearTimeout(rejoinT);
+  clearTimeout(rejoinT);clearTimeout(LIVE.openT);
   if(!quiet){lsSet("tk.host",null);lsSet("tk.join",null);render()}
 }
 /* Player */
@@ -1405,7 +1413,7 @@ async function joinTable(code){
   LIVE.role="client";LIVE.code=code;LIVE.camp={id:"live",name:"",players:[]};LIVE.combat={round:1,cur:null,list:[]};LIVE.snap={};
   lsSet("tk.join",code);lsSet("tk.host",null);setLive("connecting");render();
   const peer=new PeerC();LIVE.peer=peer;
-  peer.on("open",()=>connectHost());
+  peer.on("open",()=>{setLive("finding");render();connectHost()});
   peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
   peer.on("error",err=>{
     if(err&&err.type==="peer-unavailable"){setLive("missing");render();clearTimeout(rejoinT);rejoinT=setTimeout(()=>{if(isClient()&&LIVE.peer===peer)connectHost()},5000)}
@@ -1413,8 +1421,12 @@ async function joinTable(code){
 }
 function connectHost(){
   if(!isClient()||!LIVE.peer)return;
+  if(LIVE.peer.disconnected&&!LIVE.peer.destroyed){try{LIVE.peer.reconnect()}catch(e){}}
+  if(LIVE.conn){try{LIVE.conn.close()}catch(e){}}
   const conn=LIVE.peer.connect(PEER_PREFIX+LIVE.code.toLowerCase(),{reliable:true});LIVE.conn=conn;
-  conn.on("open",()=>{setLive("ok");conn.send({t:"hello"})});
+  clearTimeout(LIVE.openT);
+  LIVE.openT=setTimeout(()=>{if(LIVE.conn===conn&&!conn.open&&isClient()){setLive("stuck");render();clearTimeout(rejoinT);rejoinT=setTimeout(connectHost,8000)}},15000);
+  conn.on("open",()=>{clearTimeout(LIVE.openT);setLive("ok");conn.send({t:"hello"})});
   conn.on("data",d=>clientData(d));
   const lost=()=>{if(LIVE.conn!==conn||!isClient())return;setLive("reconnecting");render();clearTimeout(rejoinT);rejoinT=setTimeout(connectHost,3000)};
   conn.on("close",lost);conn.on("error",lost);
@@ -1447,8 +1459,13 @@ function joinCard(){
 }
 function liveBanner(){
   const st=LIVE.status;
-  const msg=st==="ok"?`Live from the DM${LIVE.camp.name?": <b>"+esc(LIVE.camp.name)+"</b>":""}`:st==="missing"?`No table found for <b>${esc(LIVE.code)}</b> yet. Check the code, and that the DM's app is open.`:st==="connecting"?"Connecting…":"Lost connection. Reconnecting…";
-  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><button class="linkbtn" data-act="leave">Leave</button></div>`;
+  const msg=st==="ok"?`Live from the DM${LIVE.camp.name?": <b>"+esc(LIVE.camp.name)+"</b>":""}`
+    :st==="missing"?`No table found for <b>${esc(LIVE.code)}</b>. Check the code, and that the DM's app is open with Go live on.`
+    :st==="connecting"?"Connecting to the table service…"
+    :st==="finding"?`Found table <b>${esc(LIVE.code)}</b>. Connecting to the DM's device…`
+    :st==="stuck"?`Can't reach the DM's device. Put both phones on the same Wi-Fi, and keep the DM's app open on screen. Still trying…`
+    :"Lost connection. Reconnecting…";
+  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><div class="banner-acts">${st!=="ok"?`<button class="linkbtn" data-act="retry">Try again</button>`:""}<button class="linkbtn" data-act="leave">Leave</button></div></div>`;
 }
 function renderJoinedParty(){
   const ps=LIVE.camp.players;
@@ -1474,19 +1491,21 @@ function renderJoinedCombat(o,C){
       <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button></div></div></article>`}).join("")+`</div>`;
 }
 /* Host sheet */
-function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const el=document.getElementById("liveCount");if(el)el.textContent=LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}
+function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const w=document.getElementById("liveWarn");if(w)w.hidden=LIVE.status!=="taken";const el=document.getElementById("liveCount");if(el)el.textContent=LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}
 function liveSheet(){
   let code=LIVE.code;
   if(LIVE.role!=="host"){
     const c=S.core.camps.find(x=>x.id===S.core.active);if(!c)return;
-    code=newCode();LIVE.campId=c.id;goLive(code,c.id);
+    code=newCode();LIVE.campId=c.id;goLive(code,c.id,0,true);
   }
   openSheet(`<h2>Live table</h2><div class="stack">
     <div class="code-big num" id="liveCode">${esc(code||"")}</div>
     <p class="hint" style="margin:0;color:var(--muted)">Players open Table Keeper, go to <b>Player</b>, and type this code under <b>Join a live table</b>. They'll see the party and the combat order update live. Monster HP stays on your screen only.</p>
+    <p class="hint" id="liveWarn" style="margin:0;color:var(--warn)" ${LIVE.status==="taken"?"":"hidden"}>This code is still open on another tab or device. Close the app there, or tap New code.</p>
     <p class="mini" style="margin:0"><span id="liveCount">${LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}</span></p>
     <p class="hint" style="margin:0">Sharing: <b>${esc((S.core.camps.find(x=>x.id===LIVE.campId)||{}).name||"")}</b>. Keep this app open while you play.</p>
-    <div class="foot"><button class="btn danger" id="liveStop">Stop live table</button><button class="btn gold" id="liveDone">Done</button></div></div>`,b=>{
+    <div class="foot"><button class="btn danger" id="liveStop">Stop live table</button><button class="btn" id="liveNew">New code</button><button class="btn gold" id="liveDone">Done</button></div></div>`,b=>{
+    b.querySelector("#liveNew").onclick=()=>{const c=newCode();goLive(c,LIVE.campId,0,true);b.querySelector("#liveCode").textContent=c;b.querySelector("#liveWarn").hidden=true};
     b.querySelector("#liveStop").onclick=()=>{stopLive();closeSheet()};
     b.querySelector("#liveDone").onclick=closeSheet;
   });
@@ -1532,6 +1551,7 @@ document.addEventListener("click",e=>{
     case "live":liveSheet();break;
     case "livepill":if(LIVE.role==="host")liveSheet();else{S.core.mode="player";render()}break;
     case "leave":stopLive();lsSet("tk.claim",null);break;
+    case "retry":if(isClient()){const c=LIVE.code;joinTable(c)}break;
     case "claim":lsSet("tk.claim",b.dataset.id);render();break;
     case "joinAdd":editSheet(P({name:""}),true);break;
     case "joinBring":{if(!S.me||!isClient())break;const np=JSON.parse(JSON.stringify(S.me));np.id=uid();np.ex=false;LIVE.camp.players.push(np);lsSet("tk.claim",np.id);sendChanges();render();break;}
@@ -1586,6 +1606,17 @@ document.addEventListener("input",e=>{
 // Keep the screen awake at the table where the phone allows it
 async function wake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")await navigator.wakeLock.request("screen")}catch(e){}}
 document.addEventListener("visibilitychange",wake);wake();
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState!=="visible"||!LIVE.role)return;
+  const pr=LIVE.peer;
+  if(LIVE.role==="host"){
+    if(!pr||pr.destroyed)goLive(LIVE.code,LIVE.campId);
+    else if(pr.disconnected){try{pr.reconnect()}catch(e){}}
+  }else if(isClient()){
+    if(!pr||pr.destroyed)joinTable(LIVE.code);
+    else if(!LIVE.conn||!LIVE.conn.open){clearTimeout(rejoinT);connectHost()}
+  }
+});
 
 render();
 setTimeout(connect,0);
