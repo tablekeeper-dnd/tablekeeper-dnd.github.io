@@ -31,7 +31,7 @@ ul{padding-left:20px}
 <p>When a DM starts a live table, other players can join with a 6-character code. Party details (names, stats, HP, conditions, spell slots, items and the initiative order) are then shared between the devices at the table.</p>
 <ul>
 <li>These updates travel through two free public messaging relays, EMQX (broker.emqx.io) and HiveMQ (broker.hivemq.com), so players can join from any Wi-Fi or mobile network. The relays pass the messages on and keep the latest party snapshot for that table code until the DM ends the table. Anyone who knows the code could read it, so the code works like a password.</li>
-<li>Monster HP, AC and attacks stay on the DM's device.</li>
+<li>Monster HP, AC and attacks are never shown to players. So the DM can open a campaign on another device, an encrypted copy of the DM's campaign is also kept on the relays. It is locked with the DM password, which never leaves the DM's device.</li>
 <li>Anyone with the table code can view and edit the party while the table is live. Only share the code with people at your game.</li>
 </ul>
 

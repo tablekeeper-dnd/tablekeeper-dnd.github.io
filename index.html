@@ -51,9 +51,9 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:va
 .switch{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;touch-action:pan-y}
 .switch .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:999px;background:var(--brass);transition:transform .28s cubic-bezier(.3,.7,.2,1)}
 .switch[data-mode="player"] .thumb{transform:translateX(100%)}
-.switch[data-mode="combat"] .thumb{transform:translateX(200%)}
-.switch button{position:relative;z-index:1;padding:9px 0;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.82rem;color:var(--muted);transition:color .2s}
-.switch[data-mode="dm"] [data-m="dm"],.switch[data-mode="player"] [data-m="player"],.switch[data-mode="combat"] [data-m="combat"]{color:var(--brass-ink)}
+.switch[data-mode="camps"] .thumb{transform:translateX(200%)}
+.switch button{position:relative;z-index:1;padding:9px 2px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:clamp(.68rem,2.9vw,.82rem);white-space:nowrap;color:var(--muted);transition:color .2s}
+.switch[data-mode="dm"] [data-m="dm"],.switch[data-mode="player"] [data-m="player"],.switch[data-mode="camps"] [data-m="camps"]{color:var(--brass-ink)}
 
 /* Campaign bar */
 .bar{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
@@ -262,6 +262,34 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .claim{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-width:720px;margin-inline:auto}
 .claim .tog[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
 .code-big{font-size:2.6rem;letter-spacing:.24em;text-align:center;color:var(--brass);background:var(--bg);border:1px dashed var(--brass);border-radius:12px;padding:14px 8px;user-select:all}
+/* Characters, campaigns, combat section */
+.list-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px auto 8px;max-width:720px}
+.list-h h2{font-family:var(--f-display);font-weight:400;font-size:1.4rem;margin:0}
+.clist2{display:flex;flex-direction:column;gap:8px;max-width:720px;margin-inline:auto}
+.charcard{display:grid;grid-template-columns:1fr 92px 44px;gap:12px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;min-width:0;width:100%}
+.charcard:hover{border-color:var(--brass)}
+.cc-main{min-width:0;display:flex;flex-direction:column}
+.cc-main b{font-family:var(--f-display);font-weight:400;font-size:1.25rem;line-height:1.15;overflow-wrap:anywhere}
+.cc-main small{color:var(--muted);font-size:.84rem}
+.cc-hp{display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:var(--muted)}
+.cc-ac{text-align:center;background:var(--raised);border-radius:8px;padding:4px 0}
+.cc-ac small{display:block;font-size:.6rem;letter-spacing:.1em;font-weight:800;color:var(--muted)}
+.charcard .tag{grid-column:1/-1;justify-self:start}
+.jcard{grid-template-columns:1fr auto;padding:6px 6px 6px 12px}
+.cc-open{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;min-width:0;padding:6px 0}
+.backrow{margin-top:12px;max-width:720px;margin-inline:auto}
+.lock{margin:18px auto 0;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.lock h2{font-family:var(--f-display);font-weight:400;margin:0;font-size:1.5rem}
+.lock input,.stack input[type=password]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}
+.codechip b{color:var(--brass);letter-spacing:.08em}
+.codechip.on{border-color:var(--heal)}
+.csec{margin-top:22px;border:1px solid var(--brass);border-radius:var(--r);padding:12px;background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
+.csec-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.csec-h h2{font-family:var(--f-display);font-weight:400;margin:0;font-size:1.6rem;color:var(--brass)}
+.csec-h span{color:var(--muted)}
+.csec .clist{max-width:none}
+.csec-start{margin:22px auto 0;max-width:520px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:16px;border:1px dashed var(--line);border-radius:var(--r)}
+.picks .btn{width:100%}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -269,11 +297,11 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 <body>
 <header>
   <div class="brand"><h1>Table Keeper</h1><div class="brand-r"><button class="livepill" id="livepill" data-act="livepill" hidden></button><div class="save" id="save"><i></i><span>Loading</span></div></div></div>
-  <div class="switch" id="switch" data-mode="dm" role="tablist" aria-label="Mode">
+  <div class="switch" id="switch" data-mode="player" role="tablist" aria-label="Mode">
     <div class="thumb"></div>
     <button data-m="dm" role="tab" id="tab-dm">DM</button>
     <button data-m="player" role="tab" id="tab-player">Player</button>
-    <button data-m="combat" role="tab" id="tab-combat">Combat</button>
+    <button data-m="camps" role="tab" id="tab-camps">My campaigns</button>
   </div>
 </header>
 <main id="main"></main>
@@ -297,21 +325,44 @@ function P(o){return Object.assign({id:uid(),name:"New hero",race:"",cls:"",lvl:
 function SL(...m){return Array.from({length:9},(_,i)=>({max:m[i]||0,used:0}))}
 function it(n,q){return{id:uid(),n,q:q||1}}
 
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function newCode(){return Array.from({length:6},()=>CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]).join("")}
+function blankCombat(){return {active:false,round:1,cur:null,list:[]}}
+
 /* Fresh install: no campaigns or characters until the person creates them. */
 function defaults(){
-  return {core:{mode:"dm",active:null,camps:[],myMonsters:[]},camps:{},me:null,combat:{round:1,cur:null,list:[]}};
+  return {core:{mode:"player",active:null,camps:[],myMonsters:[],joined:[],activeJoin:null,view:null},camps:{},chars:[]};
 }
 function normalise(){
-  S.core.camps=S.core.camps||[];S.core.myMonsters=S.core.myMonsters||[];S.camps=S.camps||{};
-  if(!S.combat)S.combat={round:1,cur:null,list:[]};
-  if(S.core.active&&!S.core.camps.some(c=>c.id===S.core.active))S.core.active=null;
-  if(!S.core.active&&S.core.camps.length)S.core.active=S.core.camps[0].id;
+  const c=S.core;
+  c.camps=c.camps||[];c.myMonsters=c.myMonsters||[];c.joined=c.joined||[];S.camps=S.camps||{};
+  if(!Array.isArray(S.chars))S.chars=[];
+  // Older versions kept one character in S.me
+  if(S.me){const m=S.me;if(!m.id||m.id==="me")m.id=uid();if(!S.chars.some(x=>x.id===m.id))S.chars.push(m);delete S.me}
+  const oldHost=lsGet("tk.host");
+  c.camps.forEach(m=>{
+    const cp=S.camps[m.id]||(S.camps[m.id]={players:[]});
+    if(!cp.players)cp.players=[];
+    if(!cp.combat)cp.combat=blankCombat();
+    if(!m.code)m.code=(oldHost&&oldHost.campId===m.id&&oldHost.code)||newCode();
+  });
+  // Older versions kept one fight for the whole app
+  if(S.combat){if(S.combat.list&&S.combat.list.length&&c.active&&S.camps[c.active])S.camps[c.active].combat=Object.assign(blankCombat(),S.combat,{active:true});delete S.combat}
+  const oj=lsGet("tk.join");if(oj&&!c.joined.some(j=>j.code===oj))c.joined.push({code:oj,name:""});
+  lsSet("tk.join",null);lsSet("tk.host",null);lsSet("tk.claim",null);
+  if(c.active&&!c.camps.some(x=>x.id===c.active))c.active=null;
+  if(!c.active&&c.camps.length)c.active=c.camps[0].id;
+  if(c.view&&!S.chars.some(x=>x.id===c.view))c.view=null;
+  if(c.activeJoin&&!c.joined.some(j=>j.code===c.activeJoin))c.activeJoin=null;
 }
 
 let S=defaults();
 const LS="tablekeeper.v1";
 try{const c=JSON.parse(localStorage.getItem(LS)||"null");if(c&&c.core)S=c;}catch(e){}
 normalise();
+S.core.mode="player"; // the app always opens on the Player tab
 function cache(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
 /* ---------- Saving (private store, falls back to this device) ---------- */
@@ -321,13 +372,13 @@ const saveEl=document.getElementById("save");
 function setSave(cls,txt){saveEl.className="save "+cls;saveEl.lastElementChild.textContent=txt}
 function docData(key){
   if(key==="core")return {json:JSON.stringify(S.core)};
-  if(key==="me")return {json:JSON.stringify(S.me)};
-  if(key==="combat")return {json:JSON.stringify(S.combat)};
+  if(key==="chars")return {json:JSON.stringify(S.chars)};
   const id=key.slice(5);return {json:JSON.stringify(S.camps[id]||{players:[]})};
 }
 function commit(key){
-  if(isClient()){sendChanges();return}
-  if(LIVE.role==="host"&&(key==="combat"||key==="camp_"+LIVE.campId))scheduleBroadcast();
+  if(key==="live"){sendChanges();return}
+  if(H.campId&&key==="camp_"+H.campId)hostChanged();
+  if(H.campId&&key==="core")scheduleBackup();
   cache();
   if(!online){setSave("", "Saved on this device");return}
   pending.set(key,true);setSave("busy","Saving");
@@ -338,7 +389,7 @@ async function flush(key){
   if(writing.has(key)){timers.set(key,setTimeout(()=>flush(key),400));return}
   if(!pending.get(key))return;
   pending.delete(key);writing.add(key);
-  try{await col.doc(key).set(docData(key))}catch(e){setSave("","Save failed, kept on phone");writing.delete(key);return}
+  try{await col.doc(key).set(docData(key))}catch(e){setSave("","Save failed, kept on device");writing.delete(key);return}
   writing.delete(key);
   if(!pending.size&&!writing.size)setSave("ok","Saved");
 }
@@ -357,29 +408,28 @@ async function connect(){
     clearTimeout(loading);
     online=true;
     if(!core.exists){
-      // First run: upload what's on this phone
-      await col.doc("core").set(docData("core"));
-      await col.doc("me").set(docData("me"));
-      await col.doc("combat").set(docData("combat"));
+      await col.doc("core").set(docData("core"));await col.doc("chars").set(docData("chars"));
       for(const c of S.core.camps){await col.doc("camp_"+c.id).set(docData("camp_"+c.id))}
       setSave("ok","Saved");return;
     }
-    const next={core:JSON.parse(core.data().json),camps:{},me:S.me,combat:S.combat};
-    const me=await col.doc("me").get();if(me.exists)next.me=JSON.parse(me.data().json);
-    const cb=await col.doc("combat").get();if(cb.exists)next.combat=JSON.parse(cb.data().json);
-    for(const c of next.core.camps){
-      const s=await col.doc("camp_"+c.id).get();
-      next.camps[c.id]=s.exists?JSON.parse(s.data().json):{players:[]};
-    }
-    S=next;normalise();cache();render();setSave("ok","Saved");
+    const next={core:JSON.parse(core.data().json),camps:{},chars:S.chars};
+    const ch=await col.doc("chars").get();if(ch.exists)next.chars=JSON.parse(ch.data().json);
+    const me=await col.doc("me").get();if(me.exists){const m=JSON.parse(me.data().json);if(m)next.me=m}
+    for(const c of next.core.camps){const s=await col.doc("camp_"+c.id).get();next.camps[c.id]=s.exists?JSON.parse(s.data().json):{players:[]}}
+    const mode=S.core.mode;S=next;normalise();S.core.mode=mode;cache();render();setSave("ok","Saved");
   }catch(e){clearTimeout(loading);online=false;setSave("","Saved on this device")}
 }
 
 /* ---------- Helpers ---------- */
-const camp=()=>isClient()?LIVE.camp:S.core.active?(S.camps[S.core.active]||(S.camps[S.core.active]={players:[]})):{players:[]};
-function findPlayer(id){if(isClient()){const p=LIVE.camp.players.find(p=>p.id===id);return p?{p,k:"live"}:null}for(const k in S.camps){const p=S.camps[k].players.find(p=>p.id===id);if(p)return{p,k}}return null}
-function findP(id){if(id==="me")return S.me;const f=findPlayer(id);if(f)return f.p;return CB().list.find(e=>e.kind==="m"&&e.id===id)}
-function keyFor(id){if(id==="me")return"me";if(isClient())return"live";const f=findPlayer(id);if(f)return"camp_"+f.k;return"combat"}
+const isClient=()=>S.core.mode==="camps"&&!!CL.code;
+const activeMeta=()=>S.core.camps.find(c=>c.id===S.core.active)||null;
+function dmCamp(){const id=S.core.active;if(!id)return {players:[],combat:blankCombat()};const c=S.camps[id]||(S.camps[id]={players:[],combat:blankCombat()});if(!c.combat)c.combat=blankCombat();return c}
+const camp=()=>isClient()?CL.camp:dmCamp();
+function CB(){return isClient()?CL.combat:dmCamp().combat}
+function findChar(id){return S.chars.find(c=>c.id===id)}
+function findPlayer(id){if(isClient()){const p=CL.camp.players.find(p=>p.id===id);return p?{p,k:"live"}:null}for(const k in S.camps){const p=S.camps[k].players.find(p=>p.id===id);if(p)return{p,k}}return null}
+function findP(id){const c=findChar(id);if(c)return c;const f=findPlayer(id);if(f)return f.p;return CB().list.find(e=>e.kind==="m"&&e.id===id)}
+function keyFor(id){if(findChar(id))return"chars";if(isClient())return"live";const f=findPlayer(id);if(f)return"camp_"+f.k;return campKey()}
 function hpState(p){if(p.hp<=0)return"down";const r=p.hp/Math.max(1,p.max);return r>.5?"ok":r>.25?"warn":"crit"}
 function meter(p){
   const tot=Math.max(p.max,p.hp+p.temp);
@@ -409,34 +459,49 @@ function slotBlock(p){
 
 /* ---------- Render ---------- */
 const main=document.getElementById("main");
-let renderHeld=false;
+let renderHeld=false,remoteTick=false;
 function render(){
   const ae=document.activeElement;
-  if(ae&&main.contains(ae)&&(ae.tagName==="TEXTAREA"||(ae.tagName==="INPUT"&&ae.type==="text"))&&LIVE.role&&LIVE.remoteTick){renderHeld=true;LIVE.remoteTick=false;livePill();return}
-  LIVE.remoteTick=false;renderHeld=false;
+  if(ae&&main.contains(ae)&&(ae.tagName==="TEXTAREA"||(ae.tagName==="INPUT"&&ae.type!=="checkbox"))&&remoteTick){renderHeld=true;remoteTick=false;livePill();return}
+  remoteTick=false;renderHeld=false;
   livePill();
-  const sw=document.getElementById("switch");sw.dataset.mode=S.core.mode;
-  document.getElementById("tab-dm").setAttribute("aria-selected",S.core.mode==="dm");
-  document.getElementById("tab-player").setAttribute("aria-selected",S.core.mode==="player");
-  document.getElementById("tab-combat").setAttribute("aria-selected",S.core.mode==="combat");
-  document.body.classList.toggle("in-combat",S.core.mode==="combat");
-  main.innerHTML=S.core.mode==="dm"?renderDM():S.core.mode==="player"?renderMe():renderCombat();
+  const m=S.core.mode;
+  document.getElementById("switch").dataset.mode=m;
+  ["dm","player","camps"].forEach(k=>document.getElementById("tab-"+k).setAttribute("aria-selected",m===k));
+  const C=(m==="dm"&&dmUnlocked())?dmCamp().combat:(isClient()?CL.combat:null);
+  document.body.classList.toggle("in-combat",!!(C&&C.active&&C.list.length));
+  main.innerHTML=m==="dm"?renderDM():m==="player"?renderPlayer():renderCamps();
   renderTurnbar();
 }
-function renderDM(){
-  if(isClient())return renderJoinedParty();
-  if(!S.core.camps.length)return `<div class="empty"><h2>Start a campaign</h2><p>Create a campaign, then add each player at your table to see their HP, stats, spells and kit on one screen.</p><button class="btn gold" data-act="newCamp">+ Create campaign</button></div>`;
-  const ps=camp().players;
-  const opts=S.core.camps.map(c=>`<option value="${c.id}"${c.id===S.core.active?" selected":""}>${esc(c.name)}</option>`).join("")+`<option value="__new">+ New campaign…</option>`;
+function partySummary(ps,dm){
   const down=ps.filter(p=>p.hp<=0).length,totHp=ps.reduce((a,p)=>a+p.hp,0),totMax=ps.reduce((a,p)=>a+p.max,0);
-  let h=`<div class="bar"><div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>
-    <button class="btn" data-act="campEdit">Campaign</button>${LIVE_OK?`<button class="btn ${LIVE.role==="host"?"live-on":""}" data-act="live">${LIVE.role==="host"?"Live · "+LIVE.code:"Go live"}</button>`:""}${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
-  if(!ps.length){
-    return h+`<div class="empty"><h2>No players yet</h2><p>Add each hero here, import a character with a player's code, or tap Go live and let players join and add their own.</p><div class="join-add" style="justify-content:center"><button class="btn gold" data-act="add">+ Add first player</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}</div></div>`;
+  return `<div class="summary"><span><b class="num">${ps.length}</b> heroes</span><span>Party HP <b class="num">${totHp}/${totMax}</b></span>${down?`<span style="color:var(--blood)"><b class="num" style="color:var(--blood)">${down}</b> down</span>`:""}${dm?`<button class="linkbtn" data-act="longrest">Long rest all</button>`:""}</div>`;
+}
+/* DM tab */
+function dmUnlocked(){const m=activeMeta();return !!(m&&KEYS[m.id])}
+function renderDM(){
+  if(!S.core.camps.length)return `<div class="empty"><h2>Run a campaign</h2><p>Create a campaign to get a table code for your players. A DM password keeps the DM screen yours, and lets you open the campaign on another device.</p>
+    <div class="join-add" style="justify-content:center"><button class="btn gold" data-act="newCamp">+ Create campaign</button>${LIVE_OK?`<button class="btn" data-act="openCamp">Open with code &amp; password</button>`:""}</div></div>`;
+  const meta=activeMeta();
+  const opts=S.core.camps.map(c=>`<option value="${c.id}"${c.id===S.core.active?" selected":""}>${esc(c.name)}</option>`).join("")+`<option value="__new">+ New campaign…</option>`+(LIVE_OK?`<option value="__open">Open from another device…</option>`:"");
+  const sel=`<div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>`;
+  if(!dmUnlocked()){
+    const first=!meta.ver;
+    return `<div class="bar">${sel}</div><form class="lock" data-form="${first?"setpw":"unlock"}">
+      <h2>${esc(meta.name)}</h2>
+      <p class="hint" style="margin:0;color:var(--muted)">${first?"Set a DM password for this campaign. You'll need it to open the DM screen, and to open this campaign on another device.":"Enter the DM password to open this campaign."}</p>
+      <input type="password" id="pw1" autocomplete="${first?"new-password":"current-password"}" placeholder="DM password" aria-label="DM password">
+      ${first?`<input type="password" id="pw2" autocomplete="new-password" placeholder="Type it again" aria-label="Confirm DM password">`:""}
+      <p class="hint" id="pwMsg" style="margin:0;color:var(--warn)" hidden></p>
+      <button class="btn gold">${first?"Set password":"Open"}</button></form>`;
   }
-  h+=`<div class="summary"><span><b class="num">${ps.length}</b> heroes</span><span>Party HP <b class="num">${totHp}/${totMax}</b></span>${down?`<span style="color:var(--blood)"><b class="num" style="color:var(--blood)">${down}</b> down</span>`:""}<button class="linkbtn" data-act="longrest">Long rest all</button></div>`;
-  h+=`<div class="grid">`+ps.map(card).join("")+`</div>`;
-  return h;
+  const cp=dmCamp(),ps=cp.players;
+  let h=`<div class="bar">${sel}
+    <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
+    <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
+  if(!ps.length)h+=`<div class="empty"><h2>No players yet</h2><p>Give players the code <b class="num" style="color:var(--brass)">${esc(meta.code)}</b>. They open <b>My campaigns</b>, join, and add their character. You can also add heroes yourself.</p><div class="join-add" style="justify-content:center"><button class="btn gold" data-act="add">+ Add a player</button></div></div>`;
+  else h+=partySummary(ps,true)+`<div class="grid">`+ps.map(card).join("")+`</div>`;
+  return h+combatSection();
 }
 function card(p){
   const st=hpState(p);
@@ -454,16 +519,22 @@ function card(p){
     <div class="pc-foot"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button><button class="btn" data-act="edit" data-id="${p.id}">Edit stats</button></div>
   </article>`;
 }
-function renderMe(){
-  if(isClient())return renderJoinedMe();
-  const p=S.me;
-  if(!p)return joinCard()+ `<div class="empty"><h2>Your character</h2><p>Make a sheet for the character you play. Pick a class, race and level and the stats fill themselves in.</p><button class="btn gold" data-act="newMe">+ Create character</button></div>`;
-  return joinCard()+renderSheet(p);
+/* Player tab: the person's own characters */
+function renderPlayer(){
+  const v=S.core.view&&findChar(S.core.view);
+  if(v)return `<div class="backrow"><button class="linkbtn" data-act="backChars">‹ My characters</button></div>`+renderSheet(v);
+  if(!S.chars.length)return `<div class="empty"><h2>My characters</h2><p>Make a sheet for each character you play. Pick a class, race and level and the stats fill themselves in. Then add them to a campaign.</p><button class="btn gold" data-act="newChar">+ New character</button></div>`;
+  return `<div class="list-h"><h2>My characters</h2><button class="btn gold" data-act="newChar">+ New character</button></div>
+    <div class="clist2">${S.chars.map(p=>{const st=hpState(p);return `<button class="charcard" data-act="openChar" data-id="${p.id}">
+      <span class="cc-main"><b>${esc(p.name)}</b><small>${esc(subline(p))}</small></span>
+      <span class="cc-hp"><span class="num">${p.hp}/${p.max}</span>${meter(p)}</span>
+      <span class="cc-ac"><small>AC</small><b class="num">${p.ac}</b></span>${st==="down"?`<span class="tag down">Down</span>`:""}</button>`}).join("")}</div>`;
 }
 function renderSheet(p){
+  const own=!!findChar(p.id);
   return `<div class="me">
     <div class="me-head"><div><h2>${esc(p.name)}${p.ex?`<span class="tag">Example</span>`:""}</h2><p class="sub">${esc(subline(p))}</p></div>
-      <div class="me-acts">${p.id==="me"&&LIVE_OK?`<button class="btn gold" data-act="shareMe">Import to a campaign</button>`:""}<button class="btn" data-act="edit" data-id="${p.id}">Edit</button></div></div>
+      <div class="me-acts">${own&&LIVE_OK?`<button class="btn gold" data-act="shareChar" data-id="${p.id}">Add to a campaign</button>`:""}<button class="btn" data-act="edit" data-id="${p.id}">Edit</button></div></div>
     <div class="panel big-hp"><span class="lbl">Hit points</span>${hpBlock(p)}
       ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
       <div class="foot"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button><button class="btn" data-act="rest" data-id="${p.id}">Long rest</button></div></div>
@@ -476,7 +547,7 @@ function renderSheet(p){
       ${p.items.length?`<div class="ilist">${p.items.map(i=>irow(i,p.id)).join("")}</div>`:`<p class="none" style="margin:0;color:var(--faint)">Nothing carried</p>`}
       <form class="inv-add" data-form="additem" data-id="${p.id}"><input type="text" id="me-newitem" placeholder="Add an item" aria-label="New item"><button class="btn gold">Add</button></form></div>
     <div class="panel">${spellBlock(p).replace('class="spells"','class="spells" style="border:0;padding:0"')}</div>
-    <div class="panel"><label class="lbl" for="me-notes">Notes</label><textarea class="notes" id="me-notes" data-notes="${p.id}" placeholder="Spells, features, backstory, what happened last session">${esc(p.notes)}</textarea></div>
+    <div class="panel"><label class="lbl" for="me-notes">Notes</label><textarea class="notes" id="me-notes" data-notes="${p.id}" placeholder="Features, backstory, what happened last session">${esc(p.notes)}</textarea></div>
   </div>`;
 }
 function irow(i,pid){
@@ -484,7 +555,27 @@ function irow(i,pid){
     <button class="sq" data-act="iq-" aria-label="Fewer">−</button><span class="q">${i.q}</span><button class="sq" data-act="iq+" aria-label="More">+</button>
     <button class="sq x" data-act="idel" aria-label="Remove item">×</button></div>`;
 }
-
+/* My campaigns tab: campaigns joined with a code */
+function renderCamps(){
+  if(!LIVE_OK)return `<div class="empty"><h2>My campaigns</h2><p>Open Table Keeper at tablekeeper-dnd.github.io to join campaigns.</p></div>`;
+  const J=S.core.joined;
+  if(!isClient()){
+    return `<form class="join" data-form="join"><div><span class="lbl">Join a campaign</span><p class="hint" style="margin:2px 0 0">Enter the code from your DM.</p></div>
+      <div class="join-row"><input type="text" id="join-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Campaign code"><button class="btn gold">Join</button></div></form>
+      ${J.length?`<div class="list-h"><h2>My campaigns</h2></div><div class="clist2">${J.map(j=>`<div class="charcard jcard"><button class="cc-open" data-act="openJoin" data-code="${esc(j.code)}"><span class="cc-main"><b>${esc(j.name||"Campaign")}</b><small class="num">${esc(j.code)}</small></span><span class="linkbtn">Open ›</span></button><button class="sq x" data-act="forgetJoin" data-code="${esc(j.code)}" aria-label="Remove ${esc(j.name||j.code)}">×</button></div>`).join("")}</div>`
+        :`<p class="hint" style="text-align:center;margin-top:18px">Campaigns you join appear here, so you can open them again quickly.</p>`}`;
+  }
+  const ps=CL.camp.players;
+  let h=`<div class="backrow"><button class="linkbtn" data-act="backJoin">‹ My campaigns</button></div>`+liveBanner();
+  if(CL.status==="ok"||ps.length){
+    h+=ps.length?partySummary(ps,false)+`<div class="grid">`+ps.map(card).join("")+`</div>`
+      :`<div class="empty"><h2>No heroes yet</h2><p>Add your character and it appears on the DM's screen.</p></div>`;
+    if(S.chars.length)h+=`<div class="join-add" style="margin-top:14px"><button class="btn gold" data-act="addMine">+ Add one of my characters</button></div>`;
+    else h+=`<p class="hint" style="margin-top:14px">To add your character, make one on the <b>Player</b> tab first.</p>`;
+    h+=combatSection();
+  }
+  return h;
+}
 /* ---------- Sheet ---------- */
 const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim"),sb=document.getElementById("sheetBody");
 let onClose=null;
@@ -991,8 +1082,11 @@ function spellSheet(p){
   });
   onClose=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean)};
 }
-function editSheet(p,isNew){
-  openSheet(`<h2>${isNew?(isClient()?"Your character":"New player"):"Edit "+esc(p.name)}</h2><form class="stack" id="ef">
+function editSheet(p,isNew,dest){
+  dest=dest||(findChar(p.id)?"char":isClient()?"client":"camp");
+  const title=isNew?(dest==="char"?"New character":dest==="client"?"Your character":"New player"):"Edit "+esc(p.name);
+  const footL=isNew?`<button type="button" class="btn ghost" data-x="cancel">Cancel</button>`:dest==="char"?`<button type="button" class="btn danger" data-x="delchar">Delete character</button>`:dest==="camp"?`<button type="button" class="btn danger" data-x="del">Remove player</button>`:`<span></span>`;
+  openSheet(`<h2>${title}</h2><form class="stack" id="ef">
     <div class="f"><label for="e-name">Name</label><input type="text" id="e-name" value="${esc(p.name)}"></div>
     <div class="row"><div class="f"><label for="e-race">Race</label><select class="plain" id="e-race">${optList(Object.keys(RACES),p.race)}</select></div>
       <div class="f"><label for="e-cls">Class</label><select class="plain" id="e-cls">${optList(Object.keys(CLASSES),p.cls)}</select></div>
@@ -1007,9 +1101,8 @@ function editSheet(p,isNew){
       <div class="f"><label for="e-max">Max HP</label><input type="number" inputmode="numeric" id="e-max" value="${p.max}"></div>
       <div class="f"><label for="e-speed">Speed</label><input type="number" inputmode="numeric" id="e-speed" value="${p.speed}"></div></div>
     <div class="f"><label>Ability scores</label><div class="row6">${ABIL.map(a=>`<div class="f"><label for="e-${a}" style="text-align:center">${a.toUpperCase()}</label><input type="number" inputmode="numeric" id="e-${a}" value="${p.abil[a]}"></div>`).join("")}</div></div>
-    ${p.id!=="me"?`<div class="f"><label for="e-notes">DM notes</label><textarea id="e-notes" rows="3">${esc(p.notes)}</textarea></div>`:""}
-    <div class="foot">${isNew?`<button type="button" class="btn ghost" data-x="cancel">Cancel</button>`:p.id==="me"?`<button type="button" class="btn danger" data-x="reset">Start fresh</button>`:isClient()?`<span></span>`:`<button type="button" class="btn danger" data-x="del">Remove player</button>`}
-      <button class="btn gold">Save</button></div></form>`,b=>{
+    ${dest==="camp"?`<div class="f"><label for="e-notes">DM notes</label><textarea id="e-notes" rows="3">${esc(p.notes)}</textarea></div>`:""}
+    <div class="foot">${footL}<button class="btn gold">Save</button></div></form>`,b=>{
     const f=b.querySelector("#ef"),v=id=>b.querySelector("#"+id).value,set=(id,x)=>{b.querySelector("#"+id).value=x};
     let auto=null;
     const kitWrap=b.querySelector("#kitWrap"),kit=b.querySelector("#e-kit"),msg=b.querySelector("#autoMsg");
@@ -1032,41 +1125,152 @@ function editSheet(p,isNew){
       p.ac=+v("e-ac")||0;p.max=Math.max(1,+v("e-max")||1);p.hp=clamp(+v("e-hp")||0,0,p.max);p.speed=+v("e-speed")||0;
       ABIL.forEach(a=>p.abil[a]=+v("e-"+a)||10);if(b.querySelector("#e-notes"))p.notes=v("e-notes");
       p.ex=false;
-      if(isNew){if(p.id==="me")S.me=p;else{camp().players.push(p);if(isClient())lsSet("tk.claim",p.id)}}
+      if(isNew){
+        if(dest==="char"){S.chars.push(p);S.core.view=p.id;commit("core")}
+        else if(dest==="client")CL.camp.players.push(p);
+        else dmCamp().players.push(p);
+      }
       commit(keyFor(p.id));closeSheet();};
     const x=b.querySelector("[data-x]");
     if(x)x.onclick=()=>{
       if(x.dataset.x==="cancel")return closeSheet();
-      if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent=x.dataset.x==="del"?"Tap again to remove":"Tap again to clear sheet";return}
-      if(x.dataset.x==="del"){camp().players=camp().players.filter(q=>q.id!==p.id);commit(campKey())}
-      else{S.me=null;commit("me")}
+      if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent=x.dataset.x==="del"?"Tap again to remove":"Tap again to delete";return}
+      if(x.dataset.x==="del"){const c=dmCamp();c.players=c.players.filter(q=>q.id!==p.id);c.combat.list=c.combat.list.filter(e=>e.ref!==p.id);commit(campKey())}
+      else{S.chars=S.chars.filter(q=>q.id!==p.id);S.core.view=null;commit("chars");commit("core")}
       closeSheet();
     };
   });
 }
+
+/* ---------- DM passwords. A campaign's password unlocks the DM screen and encrypts the copy kept on the relays,
+   so the DM can open the campaign on another device with its code and password. ---------- */
+const KEYS={};
+const b64=u8=>{let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function deriveBits(pw,salt){
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",salt:unb64(salt),iterations:150000,hash:"SHA-256"},km,256));
+}
+async function verOf(bits){return b64(new Uint8Array(await crypto.subtle.digest("SHA-256",bits))).slice(0,24)}
+const aesKey=bits=>crypto.subtle.importKey("raw",bits,"AES-GCM",false,["encrypt","decrypt"]);
+function rememberKey(id,bits){try{sessionStorage.setItem("tk.k."+id,b64(bits))}catch(e){}}
+async function restoreKeys(){
+  for(const m of S.core.camps){try{const s=sessionStorage.getItem("tk.k."+m.id);if(s&&m.ver){const bits=unb64(s);if(await verOf(bits)===m.ver)KEYS[m.id]=await aesKey(bits)}}catch(e){}}
+}
+async function setPassword(meta,pw){
+  meta.salt=b64(crypto.getRandomValues(new Uint8Array(16)));
+  const bits=await deriveBits(pw,meta.salt);meta.ver=await verOf(bits);
+  KEYS[meta.id]=await aesKey(bits);rememberKey(meta.id,bits);commit("core");
+}
+async function unlockCamp(meta,pw){
+  const bits=await deriveBits(pw,meta.salt);
+  if(await verOf(bits)!==meta.ver)return false;
+  KEYS[meta.id]=await aesKey(bits);rememberKey(meta.id,bits);return true;
+}
+async function seal(key,obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(obj))));
+  return {iv:b64(iv),ct:b64(ct)};
+}
+async function unseal(key,box){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(box.iv)},key,unb64(box.ct));return JSON.parse(new TextDecoder().decode(pt))}
+function lockCamp(id){delete KEYS[id];try{sessionStorage.removeItem("tk.k."+id)}catch(e){}if(H.campId===id)stopHost()}
+
 function campSheet(){
-  const c=S.core.camps.find(c=>c.id===S.core.active);
-  openSheet(`<h2>Campaign</h2><form class="stack" id="cf">
-    <div class="f"><label for="c-name">Name</label><input type="text" id="c-name" value="${esc(c?c.name:"")}"></div>
-    <div class="foot"><button type="button" class="btn danger" data-x="del">Delete campaign</button><button class="btn gold">Save</button></div></form>`,b=>{
-    b.querySelector("#cf").onsubmit=e=>{e.preventDefault();c.name=b.querySelector("#c-name").value.trim()||c.name;commit("core");closeSheet()};
+  const c=activeMeta();if(!c)return;
+  openSheet(`<h2>Campaign settings</h2><form class="stack" id="cf">
+    <div class="f"><label for="c-name">Name</label><input type="text" id="c-name" value="${esc(c.name)}"></div>
+    <div class="f"><label for="c-pw">New DM password</label><input type="password" id="c-pw" autocomplete="new-password" placeholder="Leave blank to keep the current one"></div>
+    <p class="hint" id="cfMsg" style="margin:0" hidden></p>
+    <div class="foot"><button type="button" class="btn" data-x="lock">Lock DM screen</button><button class="btn gold">Save</button></div>
+    <div class="foot" style="border-top:1px dashed var(--line);padding-top:12px"><span class="hint">Deleting removes it from this device and ends the table for players.</span><button type="button" class="btn danger" data-x="del">Delete campaign</button></div></form>`,b=>{
+    b.querySelector("#cf").onsubmit=async e=>{e.preventDefault();
+      c.name=b.querySelector("#c-name").value.trim()||c.name;
+      const pw=b.querySelector("#c-pw").value;
+      if(pw){if(pw.length<4){const m=b.querySelector("#cfMsg");m.hidden=false;m.textContent="Use at least 4 characters.";m.style.color="var(--warn)";return}await setPassword(c,pw)}
+      commit("core");commit(campKey());closeSheet()};
+    b.querySelector('[data-x="lock"]').onclick=()=>{lockCamp(c.id);closeSheet()};
     const x=b.querySelector('[data-x="del"]');
     x.onclick=()=>{if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent="Tap again: deletes all its players";return}
+      if(H.campId===c.id){const T=TOPIC(c.code);pubOn(H.clients,T+"/state",null,true);pubOn(H.clients,T+"/dm",null,true);stopHost()}
+      lockCamp(c.id);
       S.core.camps=S.core.camps.filter(q=>q.id!==c.id);delete S.camps[c.id];
       if(online)col.doc("camp_"+c.id).delete().catch(()=>{});
       S.core.active=S.core.camps.length?S.core.camps[0].id:null;commit("core");closeSheet();};
   });
 }
 function newCampSheet(){
-  openSheet(`<h2>New campaign</h2><form class="stack" id="nf"><div class="f"><label for="n-name">Name</label><input type="text" id="n-name" placeholder="e.g. Curse of the Ash Road"></div>
+  openSheet(`<h2>New campaign</h2><form class="stack" id="nf">
+    <div class="f"><label for="n-name">Name</label><input type="text" id="n-name" placeholder="e.g. Curse of the Ash Road"></div>
+    <div class="f"><label for="n-pw">DM password</label><input type="password" id="n-pw" autocomplete="new-password" placeholder="At least 4 characters"></div>
+    <div class="f"><label for="n-pw2">Type it again</label><input type="password" id="n-pw2" autocomplete="new-password"></div>
+    <p class="hint" style="margin:0">You'll get a code to give your players. Keep the password to yourself: with the code and password, anyone can open the DM screen.</p>
+    <p class="hint" id="nfMsg" style="margin:0;color:var(--warn)" hidden></p>
     <div class="foot"><button type="button" class="btn ghost" data-x="c">Cancel</button><button class="btn gold">Create</button></div></form>`,b=>{
     setTimeout(()=>b.querySelector("#n-name").focus(),250);
     b.querySelector('[data-x="c"]').onclick=closeSheet;
-    b.querySelector("#nf").onsubmit=e=>{e.preventDefault();const n=b.querySelector("#n-name").value.trim();if(!n)return;
-      const id=uid();S.core.camps.push({id,name:n});S.camps[id]={players:[]};S.core.active=id;commit("core");commit("camp_"+id);closeSheet();};
+    const msg=t=>{const m=b.querySelector("#nfMsg");m.hidden=false;m.textContent=t};
+    b.querySelector("#nf").onsubmit=async e=>{e.preventDefault();
+      const n=b.querySelector("#n-name").value.trim(),pw=b.querySelector("#n-pw").value,pw2=b.querySelector("#n-pw2").value;
+      if(!n){msg("Give the campaign a name.");return}
+      if(pw.length<4){msg("Use a password of at least 4 characters.");return}
+      if(pw!==pw2){msg("The two passwords don't match.");return}
+      const id=uid(),meta={id,name:n,code:newCode()};
+      S.core.camps.push(meta);S.camps[id]={players:[],combat:blankCombat()};S.core.active=id;
+      await setPassword(meta,pw);commit("camp_"+id);closeSheet();startHost();
+    };
   });
 }
-
+function openCampSheet(){
+  openSheet(`<h2>Open a campaign</h2><form class="stack" id="of">
+    <p class="hint" style="margin:0;color:var(--muted)">Open a campaign you run on another device. It needs to have been opened there since this feature was added.</p>
+    <div class="f"><label for="o-code">Campaign code</label><input type="text" id="o-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" class="num"></div>
+    <div class="f"><label for="o-pw">DM password</label><input type="password" id="o-pw" autocomplete="current-password"></div>
+    <p class="hint" id="ofMsg" style="margin:0" hidden></p>
+    <div class="foot"><button type="button" class="btn ghost" data-x="c">Cancel</button><button class="btn gold">Open</button></div></form>`,b=>{
+    b.querySelector('[data-x="c"]').onclick=closeSheet;
+    const msg=(t,c)=>{const m=b.querySelector("#ofMsg");m.hidden=false;m.textContent=t;m.style.color=c||"var(--warn)"};
+    b.querySelector("#of").onsubmit=e=>{e.preventDefault();
+      const code=b.querySelector("#o-code").value.toUpperCase().replace(/[^A-Z0-9]/g,""),pw=b.querySelector("#o-pw").value;
+      if(code.length!==6){msg("Codes are 6 letters and numbers.");return}
+      if(!pw){msg("Enter the DM password.");return}
+      msg("Looking for that campaign…","var(--muted)");
+      let got=false;const T=TOPIC(code)+"/dm";
+      relayRun(c=>{c.on("message",async(t,buf)=>{
+        if(got||t!==T)return;const txt=new TextDecoder().decode(buf);if(!txt)return;
+        let box;try{box=JSON.parse(txt)}catch(err){return}
+        if(!box||box.t!=="dm"||!box.salt)return;got=true;
+        try{
+          const bits=await deriveBits(pw,box.salt);
+          if(await verOf(bits)!==box.ver){msg("That password isn't right.");got=false;return}
+          const key=await aesKey(bits),data=await unseal(key,box);
+          let meta=S.core.camps.find(x=>x.code===code);
+          if(!meta){meta={id:uid(),name:data.name||"Campaign",code};S.core.camps.push(meta)}
+          meta.name=data.name||meta.name;meta.salt=box.salt;meta.ver=box.ver;
+          S.camps[meta.id]=Object.assign({players:[],combat:blankCombat()},data.camp||{});
+          (data.myMonsters||[]).forEach(m=>{if(!S.core.myMonsters.some(x=>x.id===m.id))S.core.myMonsters.push(m)});
+          KEYS[meta.id]=key;rememberKey(meta.id,bits);S.core.active=meta.id;
+          commit("core");commit("camp_"+meta.id);closeSheet();startHost();
+        }catch(err){msg("Couldn't open that campaign. Check the password.")}
+      });c.subscribe(T,{qos:1})},9000).catch(()=>msg("Couldn't reach the internet. Check your connection."));
+      setTimeout(()=>{if(!got)msg("No campaign found for that code. Open it once on the DM's original device, then try again.")},8500);
+    };
+  });
+}
+function codeSheet(){
+  const meta=activeMeta();if(!meta)return;
+  openSheet(`<h2>${esc(meta.name)}</h2><div class="stack">
+    <div class="code-big num">${esc(meta.code)}</div>
+    <p class="hint" style="margin:0;color:var(--muted)">Players open <b>My campaigns</b> and type this code. They see the party live and can add their characters. When you start combat, it appears on their screens too. Monster HP, AC and attacks stay with you.</p>
+    <p class="mini" style="margin:0"><span id="liveCount"></span></p>
+    <p class="hint" id="liveWarn" style="margin:0;color:var(--warn)" hidden>Connecting to the live service… Check this device is online.</p>
+    <div class="foot"><span></span><button class="btn gold" id="codeDone">Done</button></div></div>`,b=>{
+    b.querySelector("#codeDone").onclick=closeSheet;refreshCodeSheet();
+  });
+}
+function refreshCodeSheet(){
+  const el=document.getElementById("liveCount");if(el){const n=playersOnline();el.textContent=n===1?"1 player connected now":n+" players connected now"}
+  const w=document.getElementById("liveWarn");if(w)w.hidden=H.status==="ok";
+}
 
 /* ---------- Monsters (SRD 5.1). name|CR|AC|HP|hit dice|Dex mod|speed|attacks ---------- */
 const MON_SRC=`Acolyte|1/4|10|9|2d8|0|30 ft|Club +2, 1d4 bludgeoning; spellcaster (Sanctuary, Cure Wounds)
@@ -1168,7 +1372,7 @@ const d20=()=>1+Math.floor(Math.random()*20);
 function allMonsters(){return[...S.core.myMonsters.map(m=>({...m,custom:true})),...MONSTERS]}
 function monByKey(k){if(k.startsWith("my:"))return S.core.myMonsters.find(m=>m.id===k.slice(3));return MONSTERS.find(m=>m.name===k.slice(4))}
 
-/* ---------- Combat ---------- */
+/* ---------- Combat: a section under the party, started and ended by the DM ---------- */
 function combatants(){
   return CB().list.map(e=>{
     if(e.kind==="p"){const f=findPlayer(e.ref);return f?{e,p:f.p,dex:mod(f.p.abil.dex)}:null}
@@ -1182,63 +1386,86 @@ const isOut=x=>x.e.kind==="m"&&(x.e.hidden?!!x.e.dead:x.p.hp<=0);
 function step(dir){
   const o=ordered();if(!o.length)return;
   const C=CB();let i=o.findIndex(x=>x.e.id===C.cur);
-  if(i<0){const f=o.find(x=>!isOut(x));C.cur=f?f.e.id:o[0].e.id;C.round=C.round||1;commit("combat");render();return}
+  if(i<0){const f=o.find(x=>!isOut(x));C.cur=f?f.e.id:o[0].e.id;C.round=C.round||1;commit(campKey());render();return}
   for(let n=0;n<o.length;n++){
     i+=dir;
     if(i>=o.length){i=0;C.round++}
     if(i<0){i=o.length-1;C.round=Math.max(1,C.round-1)}
     if(!isOut(o[i]))break;
   }
-  C.cur=o[i].e.id;commit("combat");render();
+  C.cur=o[i].e.id;commit(campKey());render();
   const el=document.querySelector(".cb.cur");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
-function renderCombat(){
-  const o=ordered(),C=CB(),hasParty=camp().players.length>0;
-  if(isClient())return renderJoinedCombat(o,C);
-  const inFight=new Set(C.list.filter(e=>e.kind==="p").map(e=>e.ref));
-  const partyLeft=camp().players.filter(p=>!inFight.has(p.id)).length;
-  let h=`<div class="cbar">${hasParty&&partyLeft?`<button class="btn" data-act="cParty">+ Party${S.core.camps.length>1?` (${esc((S.core.camps.find(c=>c.id===S.core.active)||{}).name||"")})`:""}</button>`:""}
-    <button class="btn gold" data-act="cMon">+ Monster</button>
-    ${o.length?`<button class="btn" data-act="cRoll">Roll monster initiative</button><button class="btn danger" data-act="cEnd" id="cEnd">End fight</button>`:""}</div>`;
-  if(!o.length)return h+`<div class="empty"><h2>No fight yet</h2><p>${hasParty?"Add your party and some monsters. Initiative is rolled for you and you can change any number.":"Add monsters from the list or make your own. To bring in your players, create a campaign and add them on the DM screen first."}</p></div>`;
-  h+=`<div class="clist">`+o.map(x=>{
-    const {e,p}=x,cur=e.id===C.cur,out=isOut(x),pc=e.kind==="p";
-    return `<article class="cb${cur?" cur":""}${out?" dead":""}">
-      <button class="init" data-act="cInit" data-cid="${e.id}" aria-label="Initiative for ${esc(p.name)}"><small>INIT</small><b>${e.init??"–"}</b></button>
-      <div class="cb-main">
-        <div class="cb-top"><button class="cb-name" ${pc?"":`data-act="cInfo" data-cid="${e.id}"`}><b>${esc(p.name)}</b><span class="kind ${pc?"p":"m"}">${pc?"Player":"CR "+esc(e.cr||"?")}</span>${out?`<span class="tag down">Dead</span>`:pc&&p.hp<=0?`<span class="tag down">Down</span>`:""}</button>
-          <div class="cb-ac">AC <b>${p.ac}</b></div></div>
-        ${hpBlock(p)}
-        ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
-        ${!pc&&e.atk?`<p class="atk">${esc(e.atk)}</p>`:""}
-        ${pc?`<p class="atk">${esc(subline(p))} · Passive Perc ${pp(p)}</p>`:""}
-        <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button>${pc?"":`<button class="btn" data-act="cInfo" data-cid="${e.id}">Details</button>`}<button class="btn ghost" data-act="cDel" data-cid="${e.id}">Remove</button></div>
-      </div></article>`}).join("")+`</div>`;
-  return h;
+function combatSection(){
+  const C=CB(),dm=!isClient();
+  if(!C.active)return dm?`<div class="csec-start"><button class="btn gold" data-act="cStart">Start combat</button><p class="hint" style="margin:0">Opens a combat section here and on every player's screen. The party is added and initiative is rolled for you.</p></div>`:"";
+  const o=ordered();
+  let h=`<section class="csec" id="combat"><div class="csec-h"><h2>Combat</h2><span class="num">Round ${C.round}</span></div>`;
+  if(dm){
+    const inFight=new Set(C.list.filter(e=>e.kind==="p").map(e=>e.ref));
+    const left=dmCamp().players.filter(p=>!inFight.has(p.id)).length;
+    h+=`<div class="cbar">${left?`<button class="btn" data-act="cParty">+ Party</button>`:""}<button class="btn gold" data-act="cMon">+ Monster</button>
+      ${o.length?`<button class="btn" data-act="cRoll">Reroll monster initiative</button>`:""}<button class="btn danger" data-act="cEnd">End combat</button></div>`;
+  }
+  if(!o.length)return h+`<p class="hint" style="margin:10px 0 0">${dm?"Add the party and some monsters.":"The DM is setting up the fight…"}</p></section>`;
+  h+=`<div class="clist">`+o.map(x=>dm?dmRow(x,C):playerRow(x,C)).join("")+`</div>`;
+  return h+`</section>`;
+}
+function dmRow(x,C){
+  const {e,p}=x,cur=e.id===C.cur,out=isOut(x),pc=e.kind==="p";
+  return `<article class="cb${cur?" cur":""}${out?" dead":""}">
+    <button class="init" data-act="cInit" data-cid="${e.id}" aria-label="Initiative for ${esc(p.name)}"><small>INIT</small><b>${e.init??"–"}</b></button>
+    <div class="cb-main">
+      <div class="cb-top"><button class="cb-name" ${pc?"":`data-act="cInfo" data-cid="${e.id}"`}><b>${esc(p.name)}</b><span class="kind ${pc?"p":"m"}">${pc?"Player":"CR "+esc(e.cr||"?")}</span>${out?`<span class="tag down">Dead</span>`:pc&&p.hp<=0?`<span class="tag down">Down</span>`:""}</button>
+        <div class="cb-ac">AC <b>${p.ac}</b></div></div>
+      ${hpBlock(p)}
+      ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+      ${!pc&&e.atk?`<p class="atk">${esc(e.atk)}</p>`:""}
+      <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button>${pc?"":`<button class="btn" data-act="cInfo" data-cid="${e.id}">Details</button>`}<button class="btn ghost" data-act="cDel" data-cid="${e.id}">Remove</button></div>
+    </div></article>`;
+}
+function playerRow(x,C){
+  const {e,p}=x,cur=e.id===C.cur,pc=e.kind==="p",out=isOut(x);
+  if(!pc)return `<article class="cb${cur?" cur":""}${out?" dead":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
+    <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(e.name)}</b><span class="kind m">Monster</span>${out?`<span class="tag down">Dead</span>`:""}</div></div>
+    ${e.conds&&e.conds.length?`<div class="conds">${e.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}</div></article>`;
+  return `<article class="cb${cur?" cur":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
+    <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(p.name)}</b><span class="kind p">Player</span>${p.hp<=0?`<span class="tag down">Down</span>`:""}</div><div class="cb-ac">AC <b>${p.ac}</b></div></div>
+    ${hpBlock(p)}${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+    <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button></div></div></article>`;
 }
 const tb=document.getElementById("turnbar");
 function renderTurnbar(){
-  if(S.core.mode!=="combat"||!CB().list.length){tb.hidden=true;return}
+  const m=S.core.mode,dm=m==="dm"&&dmUnlocked(),cl=isClient();
+  const C=dm?dmCamp().combat:cl?CL.combat:null;
+  if(!C||!C.active||!C.list.length){tb.hidden=true;return}
   tb.hidden=false;
-  const cur=combatants().find(x=>x.e.id===CB().cur);
-  if(isClient()){tb.innerHTML=`<span></span><div class="now"><small>Round ${CB().round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Waiting for the DM"}</b></div><span></span>`;return}
+  const cur=combatants().find(x=>x.e.id===C.cur);
+  if(cl){tb.innerHTML=`<span></span><div class="now"><small>Round ${C.round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Waiting for the DM"}</b></div><span></span>`;return}
   tb.innerHTML=`<button class="btn" data-act="cPrev">Back</button>
-    <div class="now"><small>Round ${CB().round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Ready to start"}</b></div>
+    <div class="now"><small>Round ${C.round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Ready to start"}</b></div>
     <button class="btn gold" data-act="cNext">${cur?"Next":"Start"}</button>`;
 }
+function startCombat(){
+  const c=dmCamp();c.combat=blankCombat();c.combat.active=true;
+  c.players.forEach(p=>c.combat.list.push({id:uid(),kind:"p",ref:p.id,init:d20()+mod(p.abil.dex)}));
+  commit(campKey());render();
+  setTimeout(()=>{const el=document.getElementById("combat");if(el)el.scrollIntoView({block:"start",behavior:"smooth"})},50);
+}
+function endCombat(){dmCamp().combat=blankCombat();commit(campKey());render()}
 function addParty(){
-  const inFight=new Set(S.combat.list.filter(e=>e.kind==="p").map(e=>e.ref));
-  camp().players.filter(p=>!inFight.has(p.id)).forEach(p=>S.combat.list.push({id:uid(),kind:"p",ref:p.id,init:d20()+mod(p.abil.dex)}));
-  commit("combat");render();
+  const C=CB(),inFight=new Set(C.list.filter(e=>e.kind==="p").map(e=>e.ref));
+  dmCamp().players.filter(p=>!inFight.has(p.id)).forEach(p=>C.list.push({id:uid(),kind:"p",ref:p.id,init:d20()+mod(p.abil.dex)}));
+  commit(campKey());render();
 }
 function addMonsters(m,count,rollHp){
-  const base=m.name,existing=S.combat.list.filter(e=>e.kind==="m"&&e.base===base).length,L="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const C=CB(),base=m.name,existing=C.list.filter(e=>e.kind==="m"&&e.base===base).length,L="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   for(let i=0;i<count;i++){
     const hp=(rollHp&&rollDice(m.hd))||m.hp;
     const tag=(count>1||existing)?" "+(L[existing+i]||existing+i+1):"";
-    S.combat.list.push({id:uid(),kind:"m",base,name:base+tag,cr:m.cr,ac:m.ac,hp,max:hp,temp:0,dex:m.dex||0,speed:m.speed||"",atk:m.atk||"",hd:m.hd||"",conds:[],init:d20()+(m.dex||0)});
+    C.list.push({id:uid(),kind:"m",base,name:base+tag,cr:m.cr,ac:m.ac,hp,max:hp,temp:0,dex:m.dex||0,speed:m.speed||"",atk:m.atk||"",hd:m.hd||"",conds:[],init:d20()+(m.dex||0)});
   }
-  commit("combat");
+  commit(campKey());
 }
 function monSheet(sel){
   const all=allMonsters();
@@ -1298,7 +1525,7 @@ function initSheet(e){
     <div class="foot"><button type="button" class="btn" id="in-roll">Roll d20 ${sg(x.dex)}</button><button class="btn gold">Save</button></div></form>`,b=>{
     const inp=b.querySelector("#in-v");setTimeout(()=>inp.select(),250);
     b.querySelector("#in-roll").onclick=()=>{inp.value=d20()+x.dex};
-    b.querySelector("#if").onsubmit=ev=>{ev.preventDefault();const n=parseInt(inp.value,10);e.init=isNaN(n)?null:n;commit("combat");closeSheet()};
+    b.querySelector("#if").onsubmit=ev=>{ev.preventDefault();const n=parseInt(inp.value,10);e.init=isNaN(n)?null:n;commit(campKey());closeSheet()};
   });
 }
 function infoSheet(e){
@@ -1312,29 +1539,25 @@ function infoSheet(e){
     <div class="foot"><button type="button" class="btn danger" id="mi-del">Remove from fight</button><button class="btn gold">Save</button></div></form>`,b=>{
     b.querySelector("#mi").onsubmit=ev=>{ev.preventDefault();const v=id=>b.querySelector("#"+id).value;
       e.name=v("mi-name").trim()||e.name;e.ac=+v("mi-ac")||0;e.max=Math.max(1,+v("mi-max")||1);e.hp=clamp(+v("mi-hp")||0,0,e.max);e.atk=v("mi-atk");
-      commit("combat");closeSheet()};
+      commit(campKey());closeSheet()};
     b.querySelector("#mi-del").onclick=()=>{removeCombatant(e.id);closeSheet()};
   });
 }
 function removeCombatant(id){
-  const C=S.combat;
+  const C=CB();
   if(C.cur===id){const o=ordered(),i=o.findIndex(x=>x.e.id===id),nx=o[(i+1)%o.length];C.cur=nx&&nx.e.id!==id?nx.e.id:null}
   C.list=C.list.filter(e=>e.id!==id);if(!C.list.length){C.cur=null;C.round=1}
-  commit("combat");
+  commit(campKey());
 }
 
 /* ---------- Toast + rolls ---------- */
 
-/* ---------- Live table: DM hosts, players join with a code. Messages go through public MQTT relays,
-   so phones can be on any Wi-Fi or mobile network. Two relays are used side by side for redundancy. ---------- */
-const LIVE={role:null,code:null,campId:null,clients:[],seen:{},camp:{id:"live",name:"",players:[]},combat:{round:1,cur:null,list:[]},snap:{},status:"",remoteTick:false,lastRx:0,me:null};
-const isClient=()=>LIVE.role==="client";
+/* ---------- Live campaigns. The DM's device publishes the party through public MQTT relays and players
+   follow it with the campaign code, on any Wi-Fi or mobile network. Two relays run side by side. ---------- */
 const LIVE_OK=(()=>{try{return window.self===window.top}catch(e){return false}})();
-function CB(){return isClient()?LIVE.combat:S.combat}
 const RELAYS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt"];
 const TOPIC=code=>"tablekeeper-dnd/v1/"+code;
-const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const newCode=()=>Array.from({length:6},()=>CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]).join("");
+const CHAR_TOPIC=code=>"tablekeeper-dnd/v1/char/"+code;
 let mqttLib=null;
 function loadMqtt(){
   if(window.mqtt)return Promise.resolve(window.mqtt);
@@ -1343,135 +1566,17 @@ function loadMqtt(){
     sc.onload=()=>window.mqtt?ok(window.mqtt):bad(new Error("load"));sc.onerror=()=>{mqttLib=null;bad(new Error("load"))};document.head.appendChild(sc)});
   return mqttLib;
 }
-function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
-function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function setLive(st){if(LIVE.status===st)return;LIVE.status=st;livePill();refreshLiveSheet()}
-const relayUp=()=>LIVE.clients.some(c=>c.connected);
-function openRelays(subs,onMsg,onUp){
-  const m=window.mqtt;
-  LIVE.clients=RELAYS.map(url=>{
-    const c=m.connect(url,{clientId:"tk_"+uid()+uid(),clean:true,keepalive:30,reconnectPeriod:3000,connectTimeout:10000});
+function openRelays(subs,onMsg,onUp,onDown){
+  return RELAYS.map(url=>{
+    const c=window.mqtt.connect(url,{clientId:"tk_"+uid()+uid(),clean:true,keepalive:30,reconnectPeriod:3000,connectTimeout:10000});
     c.on("connect",()=>{c.subscribe(subs,{qos:1});onUp&&onUp(c)});
-    c.on("message",(t,buf)=>{
-      const txt=new TextDecoder().decode(buf);
-      if(!txt){onMsg(t,null);return}
-      let d;try{d=JSON.parse(txt)}catch(e){return}
-      onMsg(t,d);
-    });
-    c.on("offline",()=>relayCheck());c.on("close",()=>relayCheck());c.on("error",()=>{});
+    c.on("message",(t,buf)=>{const txt=new TextDecoder().decode(buf);if(!txt){onMsg(t,null);return}let d;try{d=JSON.parse(txt)}catch(e){return}onMsg(t,d)});
+    c.on("offline",()=>onDown&&onDown());c.on("close",()=>onDown&&onDown());c.on("error",()=>{});
     return c;
   });
 }
-function pub(topic,obj,retain){const s=obj==null?"":JSON.stringify(obj);LIVE.clients.forEach(c=>{if(c.connected)c.publish(topic,s,{qos:1,retain:!!retain})})}
-function closeRelays(){LIVE.clients.forEach(c=>{try{c.end(false)}catch(e){}});LIVE.clients=[]}
-function relayCheck(){
-  if(!LIVE.role)return;
-  if(!relayUp()){setLive("offline");render()}
-}
-const playersOnline=()=>{const now=Date.now();return Object.values(LIVE.seen).filter(t=>now-t<45000).length};
-function livePill(){
-  const el=document.getElementById("livepill");if(!el)return;
-  if(!LIVE.role){el.hidden=true;return}
-  el.hidden=false;el.className="livepill"+(LIVE.status==="ok"?" ok":"");
-  const lbl={connecting:"Connecting",finding:"Finding table",missing:"Not found",dmoffline:"DM offline",ended:"Ended",offline:"No internet"}[LIVE.status]||"Connecting";
-  el.textContent=LIVE.role==="host"?(LIVE.status==="ok"?`Live ${LIVE.code} · ${playersOnline()}`:`${lbl} ${LIVE.code}`):(LIVE.status==="ok"?`Joined ${LIVE.code}`:lbl);
-}
-/* Host */
-function publicState(){
-  const c=S.camps[LIVE.campId]||{players:[]},meta=S.core.camps.find(x=>x.id===LIVE.campId)||{name:""};
-  const ids=new Set(c.players.map(p=>p.id));
-  const list=S.combat.list.filter(e=>e.kind!=="p"||ids.has(e.ref)).map(e=>e.kind==="p"?{id:e.id,kind:"p",ref:e.ref,init:e.init}
-    :{id:e.id,kind:"m",name:e.name,init:e.init,dex:e.dex||0,conds:e.conds||[],dead:e.hp<=0,hidden:true});
-  return {t:"state",camp:{id:LIVE.campId,name:meta.name,players:c.players},combat:{round:S.combat.round,cur:S.combat.cur,list}};
-}
-let bTimer;
-function scheduleBroadcast(){clearTimeout(bTimer);bTimer=setTimeout(broadcast,120)}
-function broadcast(){if(LIVE.role!=="host")return;pub(TOPIC(LIVE.code)+"/state",publicState(),true)}
-async function goLive(code,campId){
-  try{await loadMqtt()}catch(e){toastMsg("Couldn't start a live table. Check you're online and try again.");return}
-  stopLive(true);
-  LIVE.role="host";LIVE.code=code;LIVE.campId=campId;LIVE.seen={};setLive("connecting");
-  lsSet("tk.host",{code,campId});lsSet("tk.join",null);
-  const T=TOPIC(code);
-  openRelays([T+"/up",T+"/hi"],(t,d)=>{
-    if(!d)return;
-    if(t===T+"/hi"&&typeof d.id==="string"){LIVE.seen[d.id]=Date.now();livePill();refreshLiveSheet();if(d.need)scheduleBroadcast()}
-    else if(t===T+"/up")hostData(d);
-  },c=>{setLive("ok");c.publish(T+"/state",JSON.stringify(publicState()),{qos:1,retain:true});render()});
-  clearInterval(LIVE.beat);
-  LIVE.beat=setInterval(()=>{broadcast();livePill();refreshLiveSheet()},20000);
-  render();
-}
-function hostData(d){
-  if(!d||d.t!=="players"||!Array.isArray(d.list))return;
-  const c=S.camps[LIVE.campId];if(!c)return;
-  d.list.forEach(np=>{
-    if(!np||typeof np!=="object"||typeof np.id!=="string")return;
-    const i=c.players.findIndex(p=>p.id===np.id);
-    if(i>=0)Object.assign(c.players[i],np,{id:c.players[i].id});
-    else if(c.players.length<12)c.players.push(P(Object.assign({},np,{name:String(np.name||"New hero").slice(0,60),ex:false})));
-  });
-  commit("camp_"+LIVE.campId);LIVE.remoteTick=true;render();
-}
-function stopLive(quiet){
-  if(LIVE.role==="host"&&!quiet&&LIVE.code){pub(TOPIC(LIVE.code)+"/state",null,true)}  // clears the table for players
-  const old=LIVE.clients;LIVE.clients=[];setTimeout(()=>old.forEach(c=>{try{c.end(false)}catch(e){}}),400);
-  clearInterval(LIVE.beat);clearInterval(LIVE.hi);clearTimeout(LIVE.findT);
-  LIVE.role=null;LIVE.code=null;LIVE.status="";LIVE.seen={};
-  if(!quiet){lsSet("tk.host",null);lsSet("tk.join",null);render()}
-}
-/* Player */
-async function joinTable(code){
-  code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
-  if(code.length!==6){toastMsg("Table codes are 6 letters and numbers.");return}
-  try{await loadMqtt()}catch(e){toastMsg("Couldn't connect. Check you're online and try again.");return}
-  stopLive(true);
-  LIVE.role="client";LIVE.code=code;LIVE.camp={id:"live",name:"",players:[]};LIVE.combat={round:1,cur:null,list:[]};LIVE.snap={};LIVE.lastRx=0;
-  LIVE.me=LIVE.me||("p_"+uid()+uid());
-  lsSet("tk.join",code);lsSet("tk.host",null);setLive("connecting");render();
-  const T=TOPIC(code);
-  const hi=need=>pub(T+"/hi",{id:LIVE.me,need:!!need});
-  openRelays([T+"/state"],(t,d)=>{
-    if(t!==T+"/state")return;
-    if(!d){if(LIVE.camp.name){setLive("ended");render()}return}
-    LIVE.lastRx=Date.now();clientData(d);
-  },()=>{
-    if(LIVE.status!=="ok"){setLive("finding");render()}
-    hi(true);
-    clearTimeout(LIVE.findT);
-    LIVE.findT=setTimeout(()=>{if(isClient()&&!LIVE.lastRx){setLive("missing");render()}},7000);
-  });
-  clearInterval(LIVE.hi);
-  LIVE.hi=setInterval(()=>{
-    if(!isClient())return;
-    hi(false);
-    if(LIVE.lastRx&&LIVE.status==="ok"&&Date.now()-LIVE.lastRx>55000){setLive("dmoffline");render()}
-  },15000);
-}
-function clientData(d){
-  if(!d||d.t!=="state"||!d.camp||!Array.isArray(d.camp.players))return;
-  const firstState=!LIVE.camp.name;
-  LIVE.camp.name=d.camp.name;LIVE.camp.id=d.camp.id;
-  // Merge in place so open sheets keep editing the same objects
-  const cur=new Map(LIVE.camp.players.map(p=>[p.id,p]));
-  LIVE.camp.players=d.camp.players.map(np=>{const o=cur.get(np.id);if(o){for(const k in o)if(!(k in np))delete o[k];return Object.assign(o,np)}return np});
-  LIVE.snap={};LIVE.camp.players.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
-  LIVE.combat=d.combat||{round:1,cur:null,list:[]};
-  clearTimeout(LIVE.findT);
-  const was=LIVE.status;setLive("ok");LIVE.remoteTick=!firstState&&was==="ok";render();
-}
-function sendChanges(){
-  if(!isClient()||!relayUp())return;
-  const changed=LIVE.camp.players.filter(p=>LIVE.snap[p.id]!==JSON.stringify(p));
-  if(!changed.length)return;
-  changed.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
-  pub(TOPIC(LIVE.code)+"/up",{t:"players",list:changed});
-}
-
-/* ---------- Import codes: a player shares a character, the DM imports it into a campaign ---------- */
-const CHAR_TOPIC=code=>"tablekeeper-dnd/v1/char/"+code;
+function pubOn(clients,topic,obj,retain){const s=obj==null?"":JSON.stringify(obj);clients.forEach(c=>{if(c.connected)c.publish(topic,s,{qos:1,retain:!!retain})})}
 function relayRun(work,ms){
-  // Opens both relays, runs work(clients) on each connection, and closes them after ms
   return loadMqtt().then(m=>{
     const cs=RELAYS.map(url=>m.connect(url,{clientId:"tk_"+uid()+uid(),clean:true,reconnectPeriod:0,connectTimeout:10000}));
     cs.forEach(c=>{c.on("error",()=>{});c.on("connect",()=>work(c))});
@@ -1479,29 +1584,202 @@ function relayRun(work,ms){
     return cs;
   });
 }
-function shareSheet(){
-  const p=S.me;if(!p)return;
-  const code=newCode(),copy=JSON.parse(JSON.stringify(p));copy.id=uid();copy.ex=false;delete copy.shareCode;
-  openSheet(`<h2>Import ${esc(p.name)} to a campaign</h2><div class="stack">
-    <div class="code-big num">${code}</div>
-    <p class="hint" style="margin:0;color:var(--muted)">Give this code to your DM. On their DM screen they tap <b>Import player</b> and type it in. Your character is copied into their campaign with its stats, spells and items.</p>
-    <p class="hint" id="shareStatus" style="margin:0;color:var(--warn)">Getting the code ready…</p>
-    <p class="hint" style="margin:0">The code works once. Your own sheet stays on this phone. If you're both at a live table, you can also tap Import there.</p>
-    <div class="foot"><span></span><button class="btn gold" id="shareDone">Done</button></div></div>`,b=>{
-    b.querySelector("#shareDone").onclick=closeSheet;
-    let ok=0;
-    relayRun(c=>c.publish(CHAR_TOPIC(code),JSON.stringify({t:"char",p:copy}),{qos:1,retain:true},err=>{
-      const el=document.getElementById("shareStatus");if(!el)return;
-      if(!err){ok++;el.textContent="Ready. Code works on any network.";el.style.color="var(--heal)"}
-    }),15000).catch(()=>{const el=document.getElementById("shareStatus");if(el)el.textContent="Couldn't reach the internet. Check your connection and try again."});
-    setTimeout(()=>{const el=document.getElementById("shareStatus");if(el&&!ok)el.textContent="Couldn't reach the import service. Check your connection and try again."},12000);
+/* DM side */
+const H={code:null,campId:null,clients:[],seen:{},status:"",beat:null};
+const playersOnline=()=>{const now=Date.now();return Object.values(H.seen).filter(t=>now-t<45000).length};
+function startHost(){
+  const meta=activeMeta();
+  if(!LIVE_OK||!meta||!KEYS[meta.id])return;
+  if(H.campId===meta.id&&H.clients.length)return;
+  stopHost();
+  H.code=meta.code;H.campId=meta.id;H.seen={};H.status="connecting";livePill();
+  const T=TOPIC(meta.code),id=meta.id;
+  loadMqtt().then(()=>{
+    if(H.campId!==id)return;
+    H.clients=openRelays([T+"/up",T+"/hi",T+"/add/+"],(t,d)=>hostMsg(T,t,d),c=>{
+      H.status="ok";c.publish(T+"/state",JSON.stringify(publicState()),{qos:1,retain:true});scheduleBackup();livePill();refreshCodeSheet();render();
+    },()=>{if(!H.clients.some(c=>c.connected)){H.status="offline";livePill();refreshCodeSheet()}});
+    clearInterval(H.beat);
+    H.beat=setInterval(()=>{broadcast();livePill();refreshCodeSheet()},20000);
+  }).catch(()=>{H.status="offline";livePill()});
+}
+function stopHost(){
+  clearInterval(H.beat);const old=H.clients;H.clients=[];
+  setTimeout(()=>old.forEach(c=>{try{c.end(false)}catch(e){}}),400);
+  H.code=null;H.campId=null;H.status="";H.seen={};livePill();
+}
+function hostMsg(T,t,d){
+  if(t===T+"/hi"){if(d&&typeof d.id==="string"){H.seen[d.id]=Date.now();livePill();refreshCodeSheet();if(d.need)scheduleBroadcast()}return}
+  if(t===T+"/up"){hostData(d);return}
+  if(t.indexOf(T+"/add/")===0&&d&&d.t==="char"&&d.p&&typeof d.p==="object"){
+    const c=S.camps[H.campId];if(!c)return;
+    if(!c.players.some(p=>p.id===d.p.id)&&c.players.length<20){
+      const np=P(Object.assign({},d.p,{name:String(d.p.name||"New hero").slice(0,60),ex:false}));
+      c.players.push(np);commit("camp_"+H.campId);remoteTick=true;render();toastMsg(np.name+" joined the party");
+    }
+    pubOn(H.clients,t,null,true);
+  }
+}
+function publicState(){
+  const c=S.camps[H.campId]||{players:[],combat:blankCombat()},meta=S.core.camps.find(x=>x.id===H.campId)||{name:""},C=c.combat||blankCombat();
+  const ids=new Set(c.players.map(p=>p.id));
+  const list=C.list.filter(e=>e.kind!=="p"||ids.has(e.ref)).map(e=>e.kind==="p"?{id:e.id,kind:"p",ref:e.ref,init:e.init}
+    :{id:e.id,kind:"m",name:e.name,init:e.init,dex:e.dex||0,conds:e.conds||[],dead:e.hp<=0,hidden:true});
+  return {t:"state",camp:{id:H.campId,name:meta.name,players:c.players},combat:{active:!!C.active,round:C.round,cur:C.cur,list}};
+}
+let bTimer,kTimer;
+function scheduleBroadcast(){clearTimeout(bTimer);bTimer=setTimeout(broadcast,120)}
+function broadcast(){if(H.code)pubOn(H.clients,TOPIC(H.code)+"/state",publicState(),true)}
+function hostChanged(){scheduleBroadcast();scheduleBackup()}
+function scheduleBackup(){clearTimeout(kTimer);kTimer=setTimeout(backup,2500)}
+async function backup(){
+  const id=H.campId,meta=S.core.camps.find(x=>x.id===id);if(!id||!meta||!KEYS[id]||!meta.salt)return;
+  try{const box=await seal(KEYS[id],{name:meta.name,camp:S.camps[id],myMonsters:S.core.myMonsters});
+    pubOn(H.clients,TOPIC(meta.code)+"/dm",Object.assign({t:"dm",salt:meta.salt,ver:meta.ver},box),true)}catch(e){}
+}
+function hostData(d){
+  if(!d||d.t!=="players"||!Array.isArray(d.list))return;
+  const c=S.camps[H.campId];if(!c)return;
+  d.list.forEach(np=>{
+    if(!np||typeof np!=="object"||typeof np.id!=="string")return;
+    const i=c.players.findIndex(p=>p.id===np.id);
+    if(i>=0)Object.assign(c.players[i],np,{id:c.players[i].id});
+    else if(c.players.length<20)c.players.push(P(Object.assign({},np,{name:String(np.name||"New hero").slice(0,60),ex:false})));
+  });
+  commit("camp_"+H.campId);remoteTick=true;render();
+}
+/* Player side */
+const CL={code:null,clients:[],camp:{id:"live",name:"",players:[]},combat:blankCombat(),snap:{},status:"",lastRx:0,me:"p_"+uid()+uid(),hi:null,findT:null};
+function openJoin(code){
+  if(!LIVE_OK)return;
+  if(CL.code===code&&CL.clients.length)return;
+  closeJoin();
+  CL.code=code;CL.camp={id:"live",name:"",players:[]};CL.combat=blankCombat();CL.snap={};CL.lastRx=0;CL.status="connecting";
+  const T=TOPIC(code);
+  const hi=need=>pubOn(CL.clients,T+"/hi",{id:CL.me,need:!!need});
+  loadMqtt().then(()=>{
+    if(CL.code!==code)return;
+    CL.clients=openRelays([T+"/state"],(t,d)=>{
+      if(t!==T+"/state"||CL.code!==code)return;
+      if(!d){if(CL.camp.name){CL.status="ended";render()}return}
+      CL.lastRx=Date.now();clientData(d);
+    },()=>{
+      if(CL.status!=="ok"){CL.status="finding";render()}
+      hi(true);clearTimeout(CL.findT);
+      CL.findT=setTimeout(()=>{if(CL.code===code&&!CL.lastRx){CL.status="missing";render()}},7000);
+    },()=>{if(CL.code===code&&!CL.clients.some(c=>c.connected)){CL.status="offline";render()}});
+    clearInterval(CL.hi);
+    CL.hi=setInterval(()=>{if(CL.code!==code)return;hi(false);if(CL.lastRx&&CL.status==="ok"&&Date.now()-CL.lastRx>55000){CL.status="dmoffline";render()}},15000);
+  }).catch(()=>{CL.status="offline";render()});
+  render();
+}
+function closeJoin(){
+  clearInterval(CL.hi);clearTimeout(CL.findT);const old=CL.clients;CL.clients=[];
+  setTimeout(()=>old.forEach(c=>{try{c.end(false)}catch(e){}}),400);
+  CL.code=null;CL.status="";
+}
+function clientData(d){
+  if(!d||d.t!=="state"||!d.camp||!Array.isArray(d.camp.players))return;
+  const firstState=!CL.camp.name;
+  CL.camp.name=d.camp.name;CL.camp.id=d.camp.id;
+  const j=S.core.joined.find(x=>x.code===CL.code);if(j&&j.name!==d.camp.name){j.name=d.camp.name;commit("core")}
+  // Merge in place so open sheets keep editing the same objects
+  const cur=new Map(CL.camp.players.map(p=>[p.id,p]));
+  CL.camp.players=d.camp.players.map(np=>{const o=cur.get(np.id);if(o){for(const k in o)if(!(k in np))delete o[k];return Object.assign(o,np)}return np});
+  CL.snap={};CL.camp.players.forEach(p=>CL.snap[p.id]=JSON.stringify(p));
+  CL.combat=Object.assign(blankCombat(),d.combat||{});
+  clearTimeout(CL.findT);
+  const was=CL.status;CL.status="ok";remoteTick=!firstState&&was==="ok";render();
+}
+function sendChanges(){
+  if(!CL.code||!CL.clients.some(c=>c.connected))return;
+  const changed=CL.camp.players.filter(p=>CL.snap[p.id]!==JSON.stringify(p));
+  if(!changed.length)return;
+  changed.forEach(p=>CL.snap[p.id]=JSON.stringify(p));
+  pubOn(CL.clients,TOPIC(CL.code)+"/up",{t:"players",list:changed});
+}
+function joinCode(raw){
+  const code=String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(code.length!==6){toastMsg("Campaign codes are 6 letters and numbers.");return}
+  if(!S.core.joined.some(j=>j.code===code))S.core.joined.unshift({code,name:""});
+  S.core.activeJoin=code;commit("core");openJoin(code);
+}
+function liveBanner(){
+  const st=CL.status,code=`<b>${esc(CL.code||"")}</b>`;
+  const msg=st==="ok"?`Live from the DM${CL.camp.name?": <b>"+esc(CL.camp.name)+"</b>":""}`
+    :st==="connecting"?"Connecting to the live service…"
+    :st==="finding"?`Looking for campaign ${code}…`
+    :st==="missing"?`No campaign found for ${code} yet. Check the code, and ask the DM to open the campaign. This keeps checking.`
+    :st==="dmoffline"?`The DM's app looks offline. You're seeing the last update. Changes sync again when they're back.`
+    :st==="ended"?`The DM has closed this campaign.`
+    :st==="offline"?`This phone can't reach the internet. Reconnecting…`
+    :"Connecting…";
+  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span>${st!=="ok"&&st!=="ended"?`<div class="banner-acts"><button class="linkbtn" data-act="retry">Try again</button></div>`:""}</div>`;
+}
+function livePill(){
+  const el=document.getElementById("livepill");if(!el)return;
+  const m=S.core.mode;
+  if(m==="camps"&&CL.code){
+    el.hidden=false;el.className="livepill"+(CL.status==="ok"?" ok":"");
+    el.textContent=CL.status==="ok"?`Joined ${CL.code}`:({missing:"Not found",dmoffline:"DM offline",ended:"Closed",offline:"No internet"}[CL.status]||"Connecting");
+  }else if(H.code){
+    el.hidden=false;el.className="livepill"+(H.status==="ok"?" ok":"");
+    el.textContent=H.status==="ok"?`Live ${H.code} · ${playersOnline()}`:(H.status==="offline"?`Offline ${H.code}`:`Connecting ${H.code}`);
+  }else el.hidden=true;
+}
+/* Adding a character to a campaign */
+function shareSheet(p){
+  if(!p)return;
+  const J=S.core.joined;
+  openSheet(`<h2>Add ${esc(p.name)} to a campaign</h2><div class="stack">
+    ${J.length?`<div class="f"><span class="lbl">Campaigns you've joined</span><div class="picks">${J.map(j=>`<button type="button" class="btn" data-j="${esc(j.code)}" style="justify-content:space-between"><span>${esc(j.name||"Campaign")} <span class="num" style="color:var(--muted)">${esc(j.code)}</span></span><span>Add</span></button>`).join("")}</div></div>`
+      :`<p class="hint" style="margin:0;color:var(--muted)">Join your DM's campaign on the <b>My campaigns</b> tab, or give your DM an import code.</p>`}
+    <p class="hint" id="shStatus" style="margin:0" hidden></p>
+    <div class="f" style="border-top:1px dashed var(--line);padding-top:12px"><span class="lbl">Or use an import code</span>
+      <p class="hint" style="margin:0">Your DM types it on their DM screen under <b>Import player</b>.</p>
+      <div id="impBox"><button type="button" class="btn" id="mkCode">Get an import code</button></div></div>
+    <div class="foot"><span></span><button class="btn gold" id="shDone">Done</button></div></div>`,b=>{
+    b.querySelector("#shDone").onclick=closeSheet;
+    const st=(t,c)=>{const el=b.querySelector("#shStatus");el.hidden=false;el.innerHTML=t;el.style.color=c||"var(--muted)"};
+    b.querySelectorAll("[data-j]").forEach(btn=>btn.onclick=()=>{
+      const code=btn.dataset.j,copy=JSON.parse(JSON.stringify(p));copy.id=uid();copy.ex=false;
+      st("Sending…");let ok=false;
+      relayRun(c=>c.publish(TOPIC(code)+"/add/"+copy.id,JSON.stringify({t:"char",p:copy}),{qos:1,retain:true},err=>{if(!err&&!ok){ok=true;
+        const j=J.find(x=>x.code===code);st(`Sent to <b>${esc(j&&j.name||code)}</b>. It appears on the DM's screen when their app is open.`,"var(--heal)")}}),12000)
+        .catch(()=>st("Couldn't reach the internet. Check your connection.","var(--warn)"));
+    });
+    b.querySelector("#mkCode").onclick=()=>{
+      const code=newCode(),copy=JSON.parse(JSON.stringify(p));copy.id=uid();copy.ex=false;
+      b.querySelector("#impBox").innerHTML=`<div class="code-big num" style="margin-top:6px">${code}</div><p class="hint" id="shareStatus" style="margin:6px 0 0;color:var(--warn)">Getting the code ready…</p>`;
+      let ok=0;
+      relayRun(c=>c.publish(CHAR_TOPIC(code),JSON.stringify({t:"char",p:copy}),{qos:1,retain:true},err=>{
+        const el=document.getElementById("shareStatus");if(!el||err)return;ok++;el.textContent="Ready. The code works once, on any network.";el.style.color="var(--heal)";
+      }),15000).catch(()=>{});
+      setTimeout(()=>{const el=document.getElementById("shareStatus");if(el&&!ok)el.textContent="Couldn't reach the import service. Check your connection and try again."},12000);
+    };
+  });
+}
+function addMineSheet(){
+  if(!isClient())return;
+  openSheet(`<h2>Add one of my characters</h2><div class="stack">
+    <div class="picks">${S.chars.map(c=>`<button type="button" class="btn" data-c="${c.id}" style="justify-content:space-between"><span>${esc(c.name)} <span style="color:var(--muted)">${esc(subline(c))}</span></span><span>Add</span></button>`).join("")}</div>
+    <p class="hint" style="margin:0">A copy goes into ${esc(CL.camp.name||"the campaign")}. Your own sheet stays on this phone.</p>
+    <div class="foot"><span></span><button class="btn" id="amDone">Close</button></div></div>`,b=>{
+    b.querySelector("#amDone").onclick=closeSheet;
+    b.querySelectorAll("[data-c]").forEach(btn=>btn.onclick=()=>{
+      const src=findChar(btn.dataset.c);if(!src)return;
+      const copy=JSON.parse(JSON.stringify(src));copy.id=uid();copy.ex=false;
+      pubOn(CL.clients,TOPIC(CL.code)+"/add/"+copy.id,{t:"char",p:copy},true);
+      CL.camp.players.push(copy);CL.snap[copy.id]=JSON.stringify(copy);
+      toastMsg(copy.name+" added");closeSheet();
+    });
   });
 }
 function importSheet(){
-  const camp0=S.core.camps.find(c=>c.id===S.core.active);if(!camp0)return;
+  const camp0=activeMeta();if(!camp0)return;
   openSheet(`<h2>Import player</h2><form class="stack" id="impf">
-    <p class="hint" style="margin:0;color:var(--muted)">Ask the player to open their character on the <b>Player</b> tab and tap <b>Import to a campaign</b>. Then type their code here.</p>
-    <div class="join-row"><input type="text" id="imp-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Import code" class="join-in"><button class="btn gold">Import</button></div>
+    <p class="hint" style="margin:0;color:var(--muted)">Ask the player to open their character on the <b>Player</b> tab, tap <b>Add to a campaign</b>, then <b>Get an import code</b>. Type their code here.</p>
+    <div class="join-row"><input type="text" id="imp-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Import code"><button class="btn gold">Import</button></div>
     <p class="hint" id="impStatus" style="margin:0">Adds to <b>${esc(camp0.name)}</b>.</p>
     <div class="foot"><span></span><button type="button" class="btn" id="impDone">Close</button></div></form>`,b=>{
     const inp=b.querySelector("#imp-code"),st=b.querySelector("#impStatus");setTimeout(()=>inp.focus(),250);
@@ -1510,8 +1788,7 @@ function importSheet(){
       const code=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,"");
       if(code.length!==6){st.textContent="Codes are 6 letters and numbers.";st.style.color="var(--warn)";return}
       st.textContent="Looking for that character…";st.style.color="var(--muted)";
-      let got=false;
-      const T=CHAR_TOPIC(code);
+      let got=false;const T=CHAR_TOPIC(code);
       relayRun(c=>{
         c.on("message",(t,buf)=>{
           if(got||t!==T)return;
@@ -1519,11 +1796,10 @@ function importSheet(){
           let d;try{d=JSON.parse(txt)}catch(err){return}
           if(!d||d.t!=="char"||!d.p||typeof d.p!=="object")return;
           got=true;
-          const c2=S.camps[camp0.id]||(S.camps[camp0.id]={players:[]});
+          const c2=S.camps[camp0.id]||(S.camps[camp0.id]={players:[],combat:blankCombat()});
           if(c2.players.length>=30){st.textContent="This campaign is full.";return}
           const np=P(Object.assign({},d.p,{id:uid(),name:String(d.p.name||"New hero").slice(0,60),ex:false}));
           c2.players.push(np);commit("camp_"+camp0.id);render();
-          // Clear the code so it can't be imported twice
           setTimeout(()=>{relayRun(cc=>cc.publish(T,"",{qos:1,retain:true}),5000).catch(()=>{})},300);
           st.innerHTML=`Imported <b>${esc(np.name)}</b> into ${esc(camp0.name)}.`;st.style.color="var(--heal)";inp.value="";
         });
@@ -1533,68 +1809,6 @@ function importSheet(){
     };
   });
 }
-/* Views for a joined player */
-function joinCard(){
-  if(!LIVE_OK)return "";
-  return `<form class="join" data-form="join"><div><span class="lbl">Join a live table</span><p class="hint" style="margin:2px 0 0">Enter the code from your DM's screen.</p></div>
-    <div class="join-row"><input type="text" id="join-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Table code"><button class="btn gold">Join</button></div></form>`;
-}
-function liveBanner(){
-  const st=LIVE.status,code=`<b>${esc(LIVE.code||"")}</b>`;
-  const msg=st==="ok"?`Live from the DM${LIVE.camp.name?": <b>"+esc(LIVE.camp.name)+"</b>":""}`
-    :st==="connecting"?"Connecting to the live service…"
-    :st==="finding"?`Looking for table ${code}…`
-    :st==="missing"?`No table found for ${code}. Check the code, and ask the DM to tap Go live. This keeps checking.`
-    :st==="dmoffline"?`The DM's app looks offline. Ask them to open Table Keeper. Changes sync again when they're back.`
-    :st==="ended"?`The DM has ended this table.`
-    :st==="offline"?`This phone can't reach the internet. Reconnecting…`
-    :"Connecting…";
-  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><div class="banner-acts">${st!=="ok"&&st!=="ended"?`<button class="linkbtn" data-act="retry">Try again</button>`:""}<button class="linkbtn" data-act="leave">Leave</button></div></div>`;
-}
-function renderJoinedParty(){
-  const ps=LIVE.camp.players;
-  return liveBanner()+(ps.length?`<div class="grid">`+ps.map(card).join("")+`</div>`:`<div class="empty"><h2>No heroes yet</h2><p>Go to the Player tab to add your character to this table.</p></div>`);
-}
-function renderJoinedMe(){
-  const ps=LIVE.camp.players,mine=lsGet("tk.claim"),p=ps.find(x=>x.id===mine);
-  const add=LIVE.status==="ok"?`<div class="join-add"><button class="btn gold" data-act="joinAdd">+ Add my character</button>${S.me?`<button class="btn" data-act="joinBring">Import ${esc(S.me.name)}</button>`:""}</div>`:"";
-  const pick=`<div class="claim"><span class="lbl">Who are you playing?</span>${ps.length?`<div class="togs">${ps.map(x=>`<button class="tog" aria-pressed="${p&&p.id===x.id}" data-act="claim" data-id="${x.id}">${esc(x.name)}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">No heroes at this table yet. Add yours and it appears on the DM's screen.</p>`}${p?"":add}</div>`;
-  return liveBanner()+pick+(p?renderSheet(p)+`<div class="join-add" style="margin-top:14px"><button class="linkbtn" data-act="joinAdd">+ Add another character</button>${S.me&&!ps.some(x=>x.name===S.me.name)?`<button class="linkbtn" data-act="joinBring">Import ${esc(S.me.name)}</button>`:""}</div>`:"");
-}
-function renderJoinedCombat(o,C){
-  let h=liveBanner();
-  if(!o.length)return h+`<div class="empty"><h2>No fight yet</h2><p>The initiative order appears here when the DM starts combat.</p></div>`;
-  return h+`<div class="clist">`+o.map(x=>{
-    const {e,p}=x,cur=e.id===C.cur,pc=e.kind==="p",out=isOut(x);
-    if(!pc)return `<article class="cb${cur?" cur":""}${out?" dead":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
-      <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(e.name)}</b><span class="kind m">Monster</span>${out?`<span class="tag down">Dead</span>`:""}</div></div>
-      ${e.conds&&e.conds.length?`<div class="conds">${e.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}</div></article>`;
-    return `<article class="cb${cur?" cur":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
-      <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(p.name)}</b><span class="kind p">Player</span>${p.hp<=0?`<span class="tag down">Down</span>`:""}</div><div class="cb-ac">AC <b>${p.ac}</b></div></div>
-      ${hpBlock(p)}${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
-      <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button></div></div></article>`}).join("")+`</div>`;
-}
-/* Host sheet */
-function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const w=document.getElementById("liveWarn");if(w)w.hidden=LIVE.status==="ok"||LIVE.role!=="host";const el=document.getElementById("liveCount");if(el){const n=playersOnline();el.textContent=n===1?"1 player connected":n+" players connected"}}
-function liveSheet(){
-  let code=LIVE.code;
-  if(LIVE.role!=="host"){
-    const c=S.core.camps.find(x=>x.id===S.core.active);if(!c)return;
-    code=newCode();LIVE.campId=c.id;goLive(code,c.id);
-  }
-  openSheet(`<h2>Live table</h2><div class="stack">
-    <div class="code-big num" id="liveCode">${esc(code||"")}</div>
-    <p class="hint" style="margin:0;color:var(--muted)">Players open Table Keeper, go to <b>Player</b>, and type this code under <b>Join a live table</b>. It works on any Wi-Fi or mobile data. They'll see the party and the combat order update live. Monster HP stays on your screen only.</p>
-    <p class="hint" id="liveWarn" style="margin:0;color:var(--warn)" ${LIVE.status==="ok"?"hidden":""}>Connecting to the live service… Check this device is online.</p>
-    <p class="mini" style="margin:0"><span id="liveCount">${playersOnline()===1?"1 player connected":playersOnline()+" players connected"}</span></p>
-    <p class="hint" style="margin:0">Sharing: <b>${esc((S.core.camps.find(x=>x.id===LIVE.campId)||{}).name||"")}</b>. Keep this app open while you play.</p>
-    <div class="foot"><button class="btn danger" id="liveStop">Stop live table</button><button class="btn" id="liveNew">New code</button><button class="btn gold" id="liveDone">Done</button></div></div>`,b=>{
-    b.querySelector("#liveNew").onclick=()=>{const old=LIVE.code,cid=LIVE.campId;if(old)pub(TOPIC(old)+"/state",null,true);const c=newCode();goLive(c,cid);b.querySelector("#liveCode").textContent=c;b.querySelector("#liveWarn").hidden=true};
-    b.querySelector("#liveStop").onclick=()=>{stopLive();closeSheet()};
-    b.querySelector("#liveDone").onclick=closeSheet;
-  });
-}
-
 
 const toast=document.getElementById("toast");let tt;
 function toastMsg(t){toast.innerHTML=`<span style="color:var(--ink)">${esc(t)}</span>`;toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),3600)}
@@ -1605,15 +1819,20 @@ function rollCheck(p,a){
 }
 
 /* ---------- Events ---------- */
-document.getElementById("switch").addEventListener("click",e=>{
-  const b=e.target.closest("[data-m]");if(!b)return;const m=b.dataset.m;
-  if(m!==S.core.mode){S.core.mode=m;commit("core");render();window.scrollTo(0,0)}
-});
+const MODES=["dm","player","camps"];
+function setMode(m){
+  if(m===S.core.mode)return;
+  S.core.mode=m;commit("core");
+  if(m==="camps"&&S.core.activeJoin&&!CL.code)openJoin(S.core.activeJoin);
+  if(m==="dm")startHost();
+  render();window.scrollTo(0,0);
+}
+document.getElementById("switch").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(b)setMode(b.dataset.m)});
 // Swipe on the switch to slide between modes
 (function(){let x0=null;const sw=document.getElementById("switch");
   sw.addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
   sw.addEventListener("touchend",e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;
-    if(Math.abs(dx)>30){const O=["dm","player","combat"],i=O.indexOf(S.core.mode),m=O[clamp(i+(dx>0?1:-1),0,2)];if(m!==S.core.mode){S.core.mode=m;commit("core");render()}}});
+    if(Math.abs(dx)>30){const i=MODES.indexOf(S.core.mode);setMode(MODES[clamp(i+(dx>0?1:-1),0,2)])}});
 })();
 
 document.addEventListener("click",e=>{
@@ -1627,36 +1846,40 @@ document.addEventListener("click",e=>{
     case "conds":condSheet(p);break;
     case "items":itemsSheet(p);break;
     case "edit":editSheet(p,false);break;
-    case "add":editSheet(P({name:""}),true);break;
+    case "add":editSheet(P({name:""}),true,"camp");break;
+    case "newChar":editSheet(P({name:""}),true,"char");break;
+    case "openChar":S.core.view=b.dataset.id;commit("core");render();window.scrollTo(0,0);break;
+    case "backChars":S.core.view=null;commit("core");render();break;
+    case "shareChar":shareSheet(p);break;
     case "campEdit":campSheet();break;
+    case "newCamp":newCampSheet();break;
+    case "openCamp":openCampSheet();break;
+    case "codeInfo":codeSheet();break;
+    case "livepill":if(S.core.mode==="camps"&&CL.code)break;if(H.code){if(S.core.mode!=="dm")setMode("dm");codeSheet()}break;
+    case "importP":importSheet();break;
+    case "openJoin":S.core.activeJoin=b.dataset.code;commit("core");openJoin(b.dataset.code);window.scrollTo(0,0);break;
+    case "backJoin":S.core.activeJoin=null;commit("core");closeJoin();render();break;
+    case "forgetJoin":{const c=b.dataset.code;S.core.joined=S.core.joined.filter(j=>j.code!==c);if(S.core.activeJoin===c){S.core.activeJoin=null;closeJoin()}commit("core");render();break;}
+    case "retry":if(CL.code){const c=CL.code;closeJoin();openJoin(c)}break;
+    case "addMine":addMineSheet();break;
     case "roll":if(p)rollCheck(p,b.dataset.a);break;
     case "slots":slotSheet(p);break;
-    case "newCamp":newCampSheet();break;
-    case "live":liveSheet();break;
-    case "livepill":if(LIVE.role==="host")liveSheet();else{S.core.mode="player";render()}break;
-    case "leave":stopLive();lsSet("tk.claim",null);break;
-    case "retry":if(isClient()){const c=LIVE.code;joinTable(c)}break;
-    case "claim":lsSet("tk.claim",b.dataset.id);render();break;
-    case "joinAdd":editSheet(P({name:""}),true);break;
-    case "shareMe":shareSheet();break;
-    case "importP":importSheet();break;
-    case "joinBring":{if(!S.me||!isClient())break;const np=JSON.parse(JSON.stringify(S.me));np.id=uid();np.ex=false;LIVE.camp.players.push(np);lsSet("tk.claim",np.id);sendChanges();render();break;}
-    case "newMe":editSheet(P({id:"me",name:""}),true);break;
+    case "cStart":startCombat();break;
     case "cParty":addParty();break;
     case "cMon":monSheet();break;
     case "cNext":step(1);break;
     case "cPrev":step(-1);break;
-    case "cRoll":S.combat.list.forEach(e=>{if(e.kind==="m")e.init=d20()+(e.dex||0)});commit("combat");render();break;
-    case "cInit":{const e=S.combat.list.find(x=>x.id===b.dataset.cid);if(e)initSheet(e);break;}
-    case "cInfo":{const e=S.combat.list.find(x=>x.id===b.dataset.cid);if(e)infoSheet(e);break;}
+    case "cRoll":CB().list.forEach(e=>{if(e.kind==="m")e.init=d20()+(e.dex||0)});commit(campKey());render();break;
+    case "cInit":{const e=CB().list.find(x=>x.id===b.dataset.cid);if(e)initSheet(e);break;}
+    case "cInfo":{const e=CB().list.find(x=>x.id===b.dataset.cid);if(e)infoSheet(e);break;}
     case "cDel":removeCombatant(b.dataset.cid);render();break;
     case "cEnd":
-      if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to end";setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="End fight"}},3000);break}
-      S.combat={round:1,cur:null,list:[]};commit("combat");render();break;
+      if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to end";setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="End combat"}},3000);break}
+      endCombat();break;
     case "spells":spellSheet(p);break;
     case "pip":{const s=slotsOf(p)[+b.dataset.lv];s.used=clamp(s.used+(b.dataset.on==="1"?1:-1),0,s.max);commit(keyFor(id));render();break;}
     case "rest":p.hp=p.max;p.temp=0;p.conds=p.conds.filter(c=>c!=="Unconscious");restoreSlots(p);commit(keyFor(id));render();break;
-    case "longrest":camp().players.forEach(q=>{q.hp=q.max;q.temp=0;q.conds=q.conds.filter(c=>c!=="Unconscious");restoreSlots(q)});commit(campKey());render();break;
+    case "longrest":dmCamp().players.forEach(q=>{q.hp=q.max;q.temp=0;q.conds=q.conds.filter(c=>c!=="Unconscious");restoreSlots(q)});commit(campKey());render();break;
     case "iq+":case "iq-":case "idel":{
       const row=b.closest("[data-item]"),q=findP(row.dataset.id),i=q.items.find(x=>x.id===row.dataset.item);
       if(act==="idel")q.items=q.items.filter(x=>x!==i);else i.q=Math.max(1,i.q+(act==="iq+"?1:-1));
@@ -1665,8 +1888,23 @@ document.addEventListener("click",e=>{
       break;}
   }
 });
-document.addEventListener("submit",e=>{
-  const jf=e.target.closest('[data-form="join"]');if(jf){e.preventDefault();joinTable(jf.querySelector("input").value);return}
+document.addEventListener("submit",async e=>{
+  const jf=e.target.closest('[data-form="join"]');if(jf){e.preventDefault();joinCode(jf.querySelector("input").value);return}
+  const lf=e.target.closest('[data-form="unlock"],[data-form="setpw"]');
+  if(lf){e.preventDefault();
+    const meta=activeMeta(),pw=lf.querySelector("#pw1").value,msg=lf.querySelector("#pwMsg"),say=t=>{msg.hidden=false;msg.textContent=t};
+    if(!meta)return;
+    if(lf.dataset.form==="setpw"){
+      if(pw.length<4){say("Use at least 4 characters.");return}
+      if(pw!==lf.querySelector("#pw2").value){say("The two passwords don't match.");return}
+      await setPassword(meta,pw);
+    }else{
+      if(!pw){say("Enter the password.");return}
+      say("Checking…");
+      if(!(await unlockCamp(meta,pw))){say("That password isn't right.");return}
+    }
+    startHost();render();return;
+  }
   const f=e.target.closest('[data-form="additem"]');if(!f)return;e.preventDefault();
   const inp=f.querySelector("input"),n=inp.value.trim();if(!n)return;
   const p=findP(f.dataset.id);
@@ -1677,8 +1915,9 @@ document.addEventListener("submit",e=>{
 });
 document.addEventListener("change",e=>{
   if(e.target.id==="campSel"){
-    if(e.target.value==="__new"){e.target.value=S.core.active;newCampSheet();return}
-    S.core.active=e.target.value;commit("core");render();return;
+    const v=e.target.value;
+    if(v==="__new"||v==="__open"){e.target.value=S.core.active;v==="__new"?newCampSheet():openCampSheet();return}
+    S.core.active=v;commit("core");stopHost();startHost();render();return;
   }
   if(e.target.matches("[data-iname]")){const row=e.target.closest("[data-item]"),q=findP(row.dataset.id),i=q.items.find(x=>x.id===row.dataset.item);
     i.n=e.target.value.trim()||i.n;commit(keyFor(q.id));}
@@ -1692,17 +1931,18 @@ document.addEventListener("input",e=>{
 // Keep the screen awake at the table where the phone allows it
 async function wake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")await navigator.wakeLock.request("screen")}catch(e){}}
 document.addEventListener("visibilitychange",wake);wake();
+// Phones pause apps in the background, so reconnect as soon as the app is back on screen
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState!=="visible"||!LIVE.role)return;
-  if(!LIVE.clients.length){LIVE.role==="host"?goLive(LIVE.code,LIVE.campId):joinTable(LIVE.code);return}
-  LIVE.clients.forEach(c=>{if(!c.connected){try{c.reconnect()}catch(e){}}});
-  if(LIVE.role==="host")scheduleBroadcast();else pub(TOPIC(LIVE.code)+"/hi",{id:LIVE.me,need:true});
+  if(document.visibilityState!=="visible")return;
+  [...H.clients,...CL.clients].forEach(c=>{if(!c.connected){try{c.reconnect()}catch(e){}}});
+  if(H.code)scheduleBroadcast();
+  if(CL.code)pubOn(CL.clients,TOPIC(CL.code)+"/hi",{id:CL.me,need:true});
 });
 
 render();
 setTimeout(connect,0);
-(function resumeLive(){const j=lsGet("tk.join"),h=lsGet("tk.host");
-  if(j)joinTable(j);else if(h&&S.core.camps.some(c=>c.id===h.campId))goLive(h.code,h.campId);})();
+restoreKeys().then(()=>{startHost();render()});
+if(S.core.activeJoin)openJoin(S.core.activeJoin);
 })();
 </script>
 
