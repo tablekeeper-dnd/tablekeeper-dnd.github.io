@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="A free D&D table app: DM screen for the whole party, your own character sheet, and a combat tracker with initiative and monsters.">
+<meta name="description" content="A free D&D table app: DM screen for the whole party, your own character sheet, a combat tracker, and live tables players can join.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -202,7 +202,10 @@ select.plain{appearance:auto;padding:9px 8px}
 
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);z-index:50;background:var(--raised);border:1px solid var(--brass);border-radius:14px;padding:10px 16px;display:flex;gap:12px;align-items:center;transition:transform .25s;max-width:calc(100% - 32px)}
-.toast.on{transform:translate(-50%,0)}
+.toast.on{transform:translate(-50%,0);visibility:visible}
+.toast{visibility:hidden}
+.brand h1{white-space:nowrap}
+@media (max-width:460px){.livepill:not([hidden])+.save span{display:none}}
 .toast b{font-family:var(--f-num);font-size:1.8rem;color:var(--brass);line-height:1}
 .toast span{font-size:.88rem;color:var(--muted)}
 .toast .crit{color:var(--heal)} .toast .fumble{color:var(--blood)}
@@ -242,13 +245,27 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .mon-prev .mini b{font-size:.95rem}
 .stepper{display:flex;align-items:center;gap:10px}
 .stepper b{font-family:var(--f-num);font-size:1.3rem;min-width:28px;text-align:center}
+/* Live table */
+.brand-r{display:flex;align-items:center;gap:10px;min-width:0}
+.livepill{font-size:.74rem;font-weight:800;letter-spacing:.06em;padding:4px 9px;border-radius:999px;background:var(--raised);border:1px solid var(--warn);color:var(--warn);font-family:var(--f-num);white-space:nowrap}
+.livepill.ok{border-color:var(--heal);color:var(--heal)}
+.btn.live-on{border-color:var(--heal);color:var(--heal)}
+.join{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;max-width:720px;margin-inline:auto}
+.join-row{display:flex;gap:8px}
+.join-row input{flex:1;min-width:0;font-family:var(--f-num);font-size:1.3rem;letter-spacing:.2em;text-transform:uppercase;text-align:center}
+.banner{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--warn);background:var(--surface);color:var(--muted);font-size:.9rem}
+.banner.ok{border-color:var(--heal)}
+.banner b{color:var(--ink)}
+.claim{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-width:720px;margin-inline:auto}
+.claim .tog[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.code-big{font-size:2.6rem;letter-spacing:.24em;text-align:center;color:var(--brass);background:var(--bg);border:1px dashed var(--brass);border-radius:12px;padding:14px 8px;user-select:all}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 </head>
 <body>
 <header>
-  <div class="brand"><h1>Table Keeper</h1><div class="save" id="save"><i></i><span>Loading</span></div></div>
+  <div class="brand"><h1>Table Keeper</h1><div class="brand-r"><button class="livepill" id="livepill" data-act="livepill" hidden></button><div class="save" id="save"><i></i><span>Loading</span></div></div></div>
   <div class="switch" id="switch" data-mode="dm" role="tablist" aria-label="Mode">
     <div class="thumb"></div>
     <button data-m="dm" role="tab" id="tab-dm">DM</button>
@@ -306,6 +323,8 @@ function docData(key){
   const id=key.slice(5);return {json:JSON.stringify(S.camps[id]||{players:[]})};
 }
 function commit(key){
+  if(isClient()){sendChanges();return}
+  if(LIVE.role==="host"&&(key==="combat"||key==="camp_"+LIVE.campId))scheduleBroadcast();
   cache();
   if(!online){setSave("", "Saved on this device");return}
   pending.set(key,true);setSave("busy","Saving");
@@ -354,10 +373,10 @@ async function connect(){
 }
 
 /* ---------- Helpers ---------- */
-const camp=()=>S.core.active?(S.camps[S.core.active]||(S.camps[S.core.active]={players:[]})):{players:[]};
-function findPlayer(id){for(const k in S.camps){const p=S.camps[k].players.find(p=>p.id===id);if(p)return{p,k}}return null}
-function findP(id){if(id==="me")return S.me;const f=findPlayer(id);if(f)return f.p;return S.combat.list.find(e=>e.kind==="m"&&e.id===id)}
-function keyFor(id){if(id==="me")return"me";const f=findPlayer(id);if(f)return"camp_"+f.k;return"combat"}
+const camp=()=>isClient()?LIVE.camp:S.core.active?(S.camps[S.core.active]||(S.camps[S.core.active]={players:[]})):{players:[]};
+function findPlayer(id){if(isClient()){const p=LIVE.camp.players.find(p=>p.id===id);return p?{p,k:"live"}:null}for(const k in S.camps){const p=S.camps[k].players.find(p=>p.id===id);if(p)return{p,k}}return null}
+function findP(id){if(id==="me")return S.me;const f=findPlayer(id);if(f)return f.p;return CB().list.find(e=>e.kind==="m"&&e.id===id)}
+function keyFor(id){if(id==="me")return"me";if(isClient())return"live";const f=findPlayer(id);if(f)return"camp_"+f.k;return"combat"}
 function hpState(p){if(p.hp<=0)return"down";const r=p.hp/Math.max(1,p.max);return r>.5?"ok":r>.25?"warn":"crit"}
 function meter(p){
   const tot=Math.max(p.max,p.hp+p.temp);
@@ -387,7 +406,12 @@ function slotBlock(p){
 
 /* ---------- Render ---------- */
 const main=document.getElementById("main");
+let renderHeld=false;
 function render(){
+  const ae=document.activeElement;
+  if(ae&&main.contains(ae)&&(ae.tagName==="TEXTAREA"||(ae.tagName==="INPUT"&&ae.type==="text"))&&LIVE.role&&LIVE.remoteTick){renderHeld=true;LIVE.remoteTick=false;livePill();return}
+  LIVE.remoteTick=false;renderHeld=false;
+  livePill();
   const sw=document.getElementById("switch");sw.dataset.mode=S.core.mode;
   document.getElementById("tab-dm").setAttribute("aria-selected",S.core.mode==="dm");
   document.getElementById("tab-player").setAttribute("aria-selected",S.core.mode==="player");
@@ -397,12 +421,13 @@ function render(){
   renderTurnbar();
 }
 function renderDM(){
+  if(isClient())return renderJoinedParty();
   if(!S.core.camps.length)return `<div class="empty"><h2>Start a campaign</h2><p>Create a campaign, then add each player at your table to see their HP, stats, spells and kit on one screen.</p><button class="btn gold" data-act="newCamp">+ Create campaign</button></div>`;
   const ps=camp().players;
   const opts=S.core.camps.map(c=>`<option value="${c.id}"${c.id===S.core.active?" selected":""}>${esc(c.name)}</option>`).join("")+`<option value="__new">+ New campaign…</option>`;
   const down=ps.filter(p=>p.hp<=0).length,totHp=ps.reduce((a,p)=>a+p.hp,0),totMax=ps.reduce((a,p)=>a+p.max,0);
   let h=`<div class="bar"><div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>
-    <button class="btn" data-act="campEdit">Campaign</button><button class="btn gold" data-act="add">+ Player</button></div>`;
+    <button class="btn" data-act="campEdit">Campaign</button>${LIVE_OK?`<button class="btn ${LIVE.role==="host"?"live-on":""}" data-act="live">${LIVE.role==="host"?"Live · "+LIVE.code:"Go live"}</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
   if(!ps.length){
     return h+`<div class="empty"><h2>No players yet</h2><p>Add each hero at the table to see their HP, stats and kit on one screen.</p><button class="btn gold" data-act="add">+ Add first player</button></div>`;
   }
@@ -427,24 +452,28 @@ function card(p){
   </article>`;
 }
 function renderMe(){
+  if(isClient())return renderJoinedMe();
   const p=S.me;
-  if(!p)return `<div class="empty"><h2>Your character</h2><p>Make a sheet for the character you play. Pick a class, race and level and the stats fill themselves in.</p><button class="btn gold" data-act="newMe">+ Create character</button></div>`;
+  if(!p)return joinCard()+ `<div class="empty"><h2>Your character</h2><p>Make a sheet for the character you play. Pick a class, race and level and the stats fill themselves in.</p><button class="btn gold" data-act="newMe">+ Create character</button></div>`;
+  return joinCard()+renderSheet(p);
+}
+function renderSheet(p){
   return `<div class="me">
     <div class="me-head"><div><h2>${esc(p.name)}${p.ex?`<span class="tag">Example</span>`:""}</h2><p class="sub">${esc(subline(p))}</p></div>
-      <button class="btn" data-act="edit" data-id="me">Edit</button></div>
+      <button class="btn" data-act="edit" data-id="${p.id}">Edit</button></div>
     <div class="panel big-hp"><span class="lbl">Hit points</span>${hpBlock(p)}
       ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
-      <div class="foot"><button class="btn" data-act="conds" data-id="me">Conditions</button><button class="btn" data-act="rest" data-id="me">Long rest</button></div></div>
+      <div class="foot"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button><button class="btn" data-act="rest" data-id="${p.id}">Long rest</button></div></div>
     <div class="stats3"><div class="stat"><small>AC</small><b>${p.ac}</b></div><div class="stat"><small>SPEED</small><b>${p.speed}</b></div><div class="stat"><small>PASSIVE PERC</small><b>${pp(p)}</b></div></div>
     <div class="panel">${slotBlock(p).replace('class="slots"','class="slots" style="border:0;padding:0"')}</div>
     <div class="panel"><span class="lbl">Abilities</span>
-      <div class="abil-big">${ABIL.map(a=>`<button data-act="roll" data-a="${a}"><small>${a.toUpperCase()}</small><b>${p.abil[a]}</b><span>${sg(mod(p.abil[a]))}</span></button>`).join("")}</div>
+      <div class="abil-big">${ABIL.map(a=>`<button data-act="roll" data-id="${p.id}" data-a="${a}"><small>${a.toUpperCase()}</small><b>${p.abil[a]}</b><span>${sg(mod(p.abil[a]))}</span></button>`).join("")}</div>
       <p class="hint">Tap an ability to roll a check.</p></div>
     <div class="panel"><div class="items-h"><span class="lbl">Inventory</span><span class="mini">Gold <b>${p.gold}</b></span></div>
-      ${p.items.length?`<div class="ilist">${p.items.map(i=>irow(i,"me")).join("")}</div>`:`<p class="none" style="margin:0;color:var(--faint)">Nothing carried</p>`}
-      <form class="inv-add" data-form="additem" data-id="me"><input type="text" id="me-newitem" placeholder="Add an item" aria-label="New item"><button class="btn gold">Add</button></form></div>
+      ${p.items.length?`<div class="ilist">${p.items.map(i=>irow(i,p.id)).join("")}</div>`:`<p class="none" style="margin:0;color:var(--faint)">Nothing carried</p>`}
+      <form class="inv-add" data-form="additem" data-id="${p.id}"><input type="text" id="me-newitem" placeholder="Add an item" aria-label="New item"><button class="btn gold">Add</button></form></div>
     <div class="panel">${spellBlock(p).replace('class="spells"','class="spells" style="border:0;padding:0"')}</div>
-    <div class="panel"><label class="lbl" for="me-notes">Notes</label><textarea class="notes" id="me-notes" data-notes="me" placeholder="Spells, features, backstory, what happened last session">${esc(p.notes)}</textarea></div>
+    <div class="panel"><label class="lbl" for="me-notes">Notes</label><textarea class="notes" id="me-notes" data-notes="${p.id}" placeholder="Spells, features, backstory, what happened last session">${esc(p.notes)}</textarea></div>
   </div>`;
 }
 function irow(i,pid){
@@ -976,7 +1005,7 @@ function editSheet(p,isNew){
       <div class="f"><label for="e-speed">Speed</label><input type="number" inputmode="numeric" id="e-speed" value="${p.speed}"></div></div>
     <div class="f"><label>Ability scores</label><div class="row6">${ABIL.map(a=>`<div class="f"><label for="e-${a}" style="text-align:center">${a.toUpperCase()}</label><input type="number" inputmode="numeric" id="e-${a}" value="${p.abil[a]}"></div>`).join("")}</div></div>
     ${p.id!=="me"?`<div class="f"><label for="e-notes">DM notes</label><textarea id="e-notes" rows="3">${esc(p.notes)}</textarea></div>`:""}
-    <div class="foot">${isNew?`<button type="button" class="btn ghost" data-x="cancel">Cancel</button>`:p.id==="me"?`<button type="button" class="btn danger" data-x="reset">Start fresh</button>`:`<button type="button" class="btn danger" data-x="del">Remove player</button>`}
+    <div class="foot">${isNew?`<button type="button" class="btn ghost" data-x="cancel">Cancel</button>`:p.id==="me"?`<button type="button" class="btn danger" data-x="reset">Start fresh</button>`:isClient()?`<span></span>`:`<button type="button" class="btn danger" data-x="del">Remove player</button>`}
       <button class="btn gold">Save</button></div></form>`,b=>{
     const f=b.querySelector("#ef"),v=id=>b.querySelector("#"+id).value,set=(id,x)=>{b.querySelector("#"+id).value=x};
     let auto=null;
@@ -1003,7 +1032,7 @@ function editSheet(p,isNew){
       if(isNew){if(p.id==="me")S.me=p;else camp().players.push(p);}
       commit(keyFor(p.id));closeSheet();};
     const x=b.querySelector("[data-x]");
-    x.onclick=()=>{
+    if(x)x.onclick=()=>{
       if(x.dataset.x==="cancel")return closeSheet();
       if(x.dataset.armed!=="1"){x.dataset.armed="1";x.textContent=x.dataset.x==="del"?"Tap again to remove":"Tap again to clear sheet";return}
       if(x.dataset.x==="del"){camp().players=camp().players.filter(q=>q.id!==p.id);commit(campKey())}
@@ -1138,7 +1167,7 @@ function monByKey(k){if(k.startsWith("my:"))return S.core.myMonsters.find(m=>m.i
 
 /* ---------- Combat ---------- */
 function combatants(){
-  return S.combat.list.map(e=>{
+  return CB().list.map(e=>{
     if(e.kind==="p"){const f=findPlayer(e.ref);return f?{e,p:f.p,dex:mod(f.p.abil.dex)}:null}
     return {e,p:e,dex:e.dex||0};
   }).filter(Boolean);
@@ -1146,10 +1175,10 @@ function combatants(){
 function ordered(){
   return combatants().sort((a,b)=>(b.e.init??-99)-(a.e.init??-99)||b.dex-a.dex||String(a.p.name).localeCompare(b.p.name));
 }
-const isOut=x=>x.e.kind==="m"&&x.p.hp<=0;
+const isOut=x=>x.e.kind==="m"&&(x.e.hidden?!!x.e.dead:x.p.hp<=0);
 function step(dir){
   const o=ordered();if(!o.length)return;
-  const C=S.combat;let i=o.findIndex(x=>x.e.id===C.cur);
+  const C=CB();let i=o.findIndex(x=>x.e.id===C.cur);
   if(i<0){const f=o.find(x=>!isOut(x));C.cur=f?f.e.id:o[0].e.id;C.round=C.round||1;commit("combat");render();return}
   for(let n=0;n<o.length;n++){
     i+=dir;
@@ -1161,7 +1190,8 @@ function step(dir){
   const el=document.querySelector(".cb.cur");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function renderCombat(){
-  const o=ordered(),C=S.combat,hasParty=camp().players.length>0;
+  const o=ordered(),C=CB(),hasParty=camp().players.length>0;
+  if(isClient())return renderJoinedCombat(o,C);
   const inFight=new Set(C.list.filter(e=>e.kind==="p").map(e=>e.ref));
   const partyLeft=camp().players.filter(p=>!inFight.has(p.id)).length;
   let h=`<div class="cbar">${hasParty&&partyLeft?`<button class="btn" data-act="cParty">+ Party${S.core.camps.length>1?` (${esc((S.core.camps.find(c=>c.id===S.core.active)||{}).name||"")})`:""}</button>`:""}
@@ -1185,11 +1215,12 @@ function renderCombat(){
 }
 const tb=document.getElementById("turnbar");
 function renderTurnbar(){
-  if(S.core.mode!=="combat"||!S.combat.list.length){tb.hidden=true;return}
+  if(S.core.mode!=="combat"||!CB().list.length){tb.hidden=true;return}
   tb.hidden=false;
-  const cur=combatants().find(x=>x.e.id===S.combat.cur);
+  const cur=combatants().find(x=>x.e.id===CB().cur);
+  if(isClient()){tb.innerHTML=`<span></span><div class="now"><small>Round ${CB().round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Waiting for the DM"}</b></div><span></span>`;return}
   tb.innerHTML=`<button class="btn" data-act="cPrev">Back</button>
-    <div class="now"><small>Round ${S.combat.round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Ready to start"}</b></div>
+    <div class="now"><small>Round ${CB().round}</small><b>${cur?esc(cur.p.name)+"'s turn":"Ready to start"}</b></div>
     <button class="btn gold" data-act="cNext">${cur?"Next":"Start"}</button>`;
 }
 function addParty(){
@@ -1290,9 +1321,175 @@ function removeCombatant(id){
 }
 
 /* ---------- Toast + rolls ---------- */
+
+/* ---------- Live table: DM hosts, players join with a code (WebRTC via PeerJS) ---------- */
+const LIVE={role:null,code:null,campId:null,peer:null,conns:new Set(),conn:null,camp:{id:"live",name:"",players:[]},combat:{round:1,cur:null,list:[]},snap:{},status:"",remoteTick:false};
+const isClient=()=>LIVE.role==="client";
+const LIVE_OK=(()=>{try{return window.self===window.top}catch(e){return false}})();
+function CB(){return isClient()?LIVE.combat:S.combat}
+const PEER_PREFIX="tablekeeper-tbl-";
+const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const newCode=()=>Array.from({length:6},()=>CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]).join("");
+let peerLib=null;
+function loadPeer(){
+  if(window.Peer)return Promise.resolve(window.Peer);
+  if(peerLib)return peerLib;
+  peerLib=new Promise((ok,bad)=>{const sc=document.createElement("script");sc.src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
+    sc.onload=()=>window.Peer?ok(window.Peer):bad(new Error("load"));sc.onerror=()=>{peerLib=null;bad(new Error("load"))};document.head.appendChild(sc)});
+  return peerLib;
+}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function setLive(st){LIVE.status=st;livePill();const el=document.getElementById("liveStatus");if(el)el.textContent=st}
+function livePill(){
+  const el=document.getElementById("livepill");if(!el)return;
+  if(!LIVE.role){el.hidden=true;return}
+  el.hidden=false;el.className="livepill"+(LIVE.status==="ok"?" ok":"");
+  el.textContent=LIVE.role==="host"?`Live ${LIVE.code} · ${LIVE.conns.size}`:(LIVE.status==="ok"?`Joined ${LIVE.code}`:"Reconnecting");
+}
+/* Host */
+function publicState(){
+  const c=S.camps[LIVE.campId]||{players:[]},meta=S.core.camps.find(x=>x.id===LIVE.campId)||{name:""};
+  const ids=new Set(c.players.map(p=>p.id));
+  const list=S.combat.list.filter(e=>e.kind!=="p"||ids.has(e.ref)).map(e=>e.kind==="p"?{id:e.id,kind:"p",ref:e.ref,init:e.init}
+    :{id:e.id,kind:"m",name:e.name,init:e.init,dex:e.dex||0,conds:e.conds||[],dead:e.hp<=0,hidden:true});
+  return {t:"state",camp:{id:LIVE.campId,name:meta.name,players:c.players},combat:{round:S.combat.round,cur:S.combat.cur,list}};
+}
+let bTimer;
+function scheduleBroadcast(){clearTimeout(bTimer);bTimer=setTimeout(broadcast,120)}
+function broadcast(){if(LIVE.role!=="host")return;const st=publicState();LIVE.conns.forEach(c=>{try{if(c.open)c.send(st)}catch(e){}})}
+async function goLive(code,campId,tries){
+  tries=tries||0;
+  let PeerC;try{PeerC=await loadPeer()}catch(e){toastMsg("Couldn't start a live table. Check you're online and try again.");stopLive();return}
+  stopLive(true);
+  LIVE.role="host";LIVE.code=code;LIVE.campId=campId;setLive("starting");
+  const peer=new PeerC(PEER_PREFIX+code.toLowerCase());LIVE.peer=peer;
+  peer.on("open",()=>{setLive("ok");lsSet("tk.host",{code,campId});lsSet("tk.join",null);refreshLiveSheet();render()});
+  peer.on("connection",conn=>{
+    conn.on("open",()=>{LIVE.conns.add(conn);livePill();conn.send(publicState());refreshLiveSheet()});
+    conn.on("data",d=>hostData(d));
+    conn.on("close",()=>{LIVE.conns.delete(conn);livePill();refreshLiveSheet()});
+    conn.on("error",()=>{LIVE.conns.delete(conn);livePill()});
+  });
+  peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
+  peer.on("error",err=>{
+    if(err&&err.type==="unavailable-id"){peer.destroy();if(tries<4)setTimeout(()=>goLive(code,campId,tries+1),3000);else goLive(newCode(),campId)}
+    else if(err&&(err.type==="network"||err.type==="server-error"||err.type==="socket-error")){setLive("reconnecting")}
+  });
+}
+function hostData(d){
+  if(!d||d.t!=="players"||!Array.isArray(d.list))return;
+  const c=S.camps[LIVE.campId];if(!c)return;
+  d.list.forEach(np=>{const i=c.players.findIndex(p=>p.id===np.id);if(i>=0&&np&&typeof np==="object")Object.assign(c.players[i],np,{id:c.players[i].id})});
+  commit("camp_"+LIVE.campId);LIVE.remoteTick=true;render();
+}
+function stopLive(quiet){
+  if(LIVE.peer){try{LIVE.peer.destroy()}catch(e){}}
+  LIVE.peer=null;LIVE.conns=new Set();LIVE.conn=null;LIVE.role=null;LIVE.code=null;LIVE.status="";
+  clearTimeout(rejoinT);
+  if(!quiet){lsSet("tk.host",null);lsSet("tk.join",null);render()}
+}
+/* Player */
+let rejoinT;
+async function joinTable(code){
+  code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(code.length!==6){toastMsg("Table codes are 6 letters and numbers.");return}
+  let PeerC;try{PeerC=await loadPeer()}catch(e){toastMsg("Couldn't connect. Check you're online and try again.");return}
+  stopLive(true);
+  LIVE.role="client";LIVE.code=code;LIVE.camp={id:"live",name:"",players:[]};LIVE.combat={round:1,cur:null,list:[]};LIVE.snap={};
+  lsSet("tk.join",code);lsSet("tk.host",null);setLive("connecting");render();
+  const peer=new PeerC();LIVE.peer=peer;
+  peer.on("open",()=>connectHost());
+  peer.on("disconnected",()=>{setLive("reconnecting");setTimeout(()=>{if(LIVE.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}},2000)});
+  peer.on("error",err=>{
+    if(err&&err.type==="peer-unavailable"){setLive("missing");render();clearTimeout(rejoinT);rejoinT=setTimeout(()=>{if(isClient()&&LIVE.peer===peer)connectHost()},5000)}
+  });
+}
+function connectHost(){
+  if(!isClient()||!LIVE.peer)return;
+  const conn=LIVE.peer.connect(PEER_PREFIX+LIVE.code.toLowerCase(),{reliable:true});LIVE.conn=conn;
+  conn.on("open",()=>{setLive("ok");conn.send({t:"hello"})});
+  conn.on("data",d=>clientData(d));
+  const lost=()=>{if(LIVE.conn!==conn||!isClient())return;setLive("reconnecting");render();clearTimeout(rejoinT);rejoinT=setTimeout(connectHost,3000)};
+  conn.on("close",lost);conn.on("error",lost);
+}
+function clientData(d){
+  if(!d||d.t!=="state")return;
+  const firstState=!LIVE.camp.name;
+  LIVE.camp.name=d.camp.name;LIVE.camp.id=d.camp.id;
+  // Merge in place so open sheets keep editing the same objects
+  const cur=new Map(LIVE.camp.players.map(p=>[p.id,p]));
+  LIVE.camp.players=d.camp.players.map(np=>{const o=cur.get(np.id);if(o){for(const k in o)if(!(k in np))delete o[k];return Object.assign(o,np)}return np});
+  LIVE.snap={};LIVE.camp.players.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
+  LIVE.combat=d.combat;
+  setLive("ok");LIVE.remoteTick=!firstState;render();
+  if(sheet.classList.contains("on"))refreshOpenPips();
+}
+function sendChanges(){
+  if(!LIVE.conn||!LIVE.conn.open)return;
+  const changed=LIVE.camp.players.filter(p=>LIVE.snap[p.id]!==JSON.stringify(p));
+  if(!changed.length)return;
+  changed.forEach(p=>LIVE.snap[p.id]=JSON.stringify(p));
+  try{LIVE.conn.send({t:"players",list:changed})}catch(e){}
+}
+function refreshOpenPips(){}
+/* Views for a joined player */
+function joinCard(){
+  if(!LIVE_OK)return "";
+  return `<form class="join" data-form="join"><div><span class="lbl">Join a live table</span><p class="hint" style="margin:2px 0 0">Enter the code from your DM's screen.</p></div>
+    <div class="join-row"><input type="text" id="join-code" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Table code"><button class="btn gold">Join</button></div></form>`;
+}
+function liveBanner(){
+  const st=LIVE.status;
+  const msg=st==="ok"?`Live from the DM${LIVE.camp.name?": <b>"+esc(LIVE.camp.name)+"</b>":""}`:st==="missing"?`No table found for <b>${esc(LIVE.code)}</b> yet. Check the code, and that the DM's app is open.`:st==="connecting"?"Connecting…":"Lost connection. Reconnecting…";
+  return `<div class="banner${st==="ok"?" ok":""}"><span>${msg}</span><button class="linkbtn" data-act="leave">Leave</button></div>`;
+}
+function renderJoinedParty(){
+  const ps=LIVE.camp.players;
+  return liveBanner()+(ps.length?`<div class="grid">`+ps.map(card).join("")+`</div>`:`<div class="empty"><h2>No heroes yet</h2><p>The DM hasn't added any players to this campaign.</p></div>`);
+}
+function renderJoinedMe(){
+  const ps=LIVE.camp.players,mine=lsGet("tk.claim"),p=ps.find(x=>x.id===mine);
+  const pick=`<div class="claim"><span class="lbl">Who are you playing?</span><div class="togs">${ps.map(x=>`<button class="tog" aria-pressed="${p&&p.id===x.id}" data-act="claim" data-id="${x.id}">${esc(x.name)}</button>`).join("")||`<span class="hint">Waiting for the DM to add heroes.</span>`}</div></div>`;
+  return liveBanner()+pick+(p?renderSheet(p):"");
+}
+function renderJoinedCombat(o,C){
+  let h=liveBanner();
+  if(!o.length)return h+`<div class="empty"><h2>No fight yet</h2><p>The initiative order appears here when the DM starts combat.</p></div>`;
+  return h+`<div class="clist">`+o.map(x=>{
+    const {e,p}=x,cur=e.id===C.cur,pc=e.kind==="p",out=isOut(x);
+    if(!pc)return `<article class="cb${cur?" cur":""}${out?" dead":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
+      <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(e.name)}</b><span class="kind m">Monster</span>${out?`<span class="tag down">Dead</span>`:""}</div></div>
+      ${e.conds&&e.conds.length?`<div class="conds">${e.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}</div></article>`;
+    return `<article class="cb${cur?" cur":""}"><div class="init"><small>INIT</small><b>${e.init??"–"}</b></div>
+      <div class="cb-main"><div class="cb-top"><div class="cb-name"><b>${esc(p.name)}</b><span class="kind p">Player</span>${p.hp<=0?`<span class="tag down">Down</span>`:""}</div><div class="cb-ac">AC <b>${p.ac}</b></div></div>
+      ${hpBlock(p)}${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+      <div class="cb-acts"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button></div></div></article>`}).join("")+`</div>`;
+}
+/* Host sheet */
+function refreshLiveSheet(){const cEl=document.getElementById("liveCode");if(cEl&&LIVE.code)cEl.textContent=LIVE.code;const el=document.getElementById("liveCount");if(el)el.textContent=LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}
+function liveSheet(){
+  let code=LIVE.code;
+  if(LIVE.role!=="host"){
+    const c=S.core.camps.find(x=>x.id===S.core.active);if(!c)return;
+    code=newCode();LIVE.campId=c.id;goLive(code,c.id);
+  }
+  openSheet(`<h2>Live table</h2><div class="stack">
+    <div class="code-big num" id="liveCode">${esc(code||"")}</div>
+    <p class="hint" style="margin:0;color:var(--muted)">Players open Table Keeper, go to <b>Player</b>, and type this code under <b>Join a live table</b>. They'll see the party and the combat order update live. Monster HP stays on your screen only.</p>
+    <p class="mini" style="margin:0"><span id="liveCount">${LIVE.conns.size===1?"1 player connected":LIVE.conns.size+" players connected"}</span></p>
+    <p class="hint" style="margin:0">Sharing: <b>${esc((S.core.camps.find(x=>x.id===LIVE.campId)||{}).name||"")}</b>. Keep this app open while you play.</p>
+    <div class="foot"><button class="btn danger" id="liveStop">Stop live table</button><button class="btn gold" id="liveDone">Done</button></div></div>`,b=>{
+    b.querySelector("#liveStop").onclick=()=>{stopLive();closeSheet()};
+    b.querySelector("#liveDone").onclick=closeSheet;
+  });
+}
+
+
 const toast=document.getElementById("toast");let tt;
-function rollCheck(a){
-  const m=mod(S.me.abil[a]),d=1+Math.floor(Math.random()*20),t=d+m;
+function toastMsg(t){toast.innerHTML=`<span style="color:var(--ink)">${esc(t)}</span>`;toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),3600)}
+function rollCheck(p,a){
+  const m=mod(p.abil[a]),d=1+Math.floor(Math.random()*20),t=d+m;
   toast.innerHTML=`<b>${t}</b><span>${a.toUpperCase()} check<br><span class="${d===20?"crit":d===1?"fumble":""}">d20 ${d}${d===20?" natural 20":d===1?" natural 1":""}</span> ${sg(m)}</span>`;
   toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),3200);
 }
@@ -1322,9 +1519,13 @@ document.addEventListener("click",e=>{
     case "edit":editSheet(p,false);break;
     case "add":editSheet(P({name:""}),true);break;
     case "campEdit":campSheet();break;
-    case "roll":rollCheck(b.dataset.a);break;
+    case "roll":if(p)rollCheck(p,b.dataset.a);break;
     case "slots":slotSheet(p);break;
     case "newCamp":newCampSheet();break;
+    case "live":liveSheet();break;
+    case "livepill":if(LIVE.role==="host")liveSheet();else{S.core.mode="player";render()}break;
+    case "leave":stopLive();lsSet("tk.claim",null);break;
+    case "claim":lsSet("tk.claim",b.dataset.id);render();break;
     case "newMe":editSheet(P({id:"me",name:""}),true);break;
     case "cParty":addParty();break;
     case "cMon":monSheet();break;
@@ -1350,6 +1551,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("submit",e=>{
+  const jf=e.target.closest('[data-form="join"]');if(jf){e.preventDefault();joinTable(jf.querySelector("input").value);return}
   const f=e.target.closest('[data-form="additem"]');if(!f)return;e.preventDefault();
   const inp=f.querySelector("input"),n=inp.value.trim();if(!n)return;
   const p=findP(f.dataset.id);
@@ -1367,8 +1569,9 @@ document.addEventListener("change",e=>{
     i.n=e.target.value.trim()||i.n;commit(keyFor(q.id));}
 });
 let nt;
+document.addEventListener("focusout",()=>{if(renderHeld)setTimeout(()=>{if(renderHeld)render()},50)});
 document.addEventListener("input",e=>{
-  if(e.target.dataset.notes==="me"){S.me.notes=e.target.value;clearTimeout(nt);nt=setTimeout(()=>commit("me"),500)}
+  if(e.target.dataset.notes){const p=findP(e.target.dataset.notes);if(!p)return;p.notes=e.target.value;clearTimeout(nt);nt=setTimeout(()=>commit(keyFor(p.id)),500)}
 });
 
 // Keep the screen awake at the table where the phone allows it
@@ -1377,6 +1580,8 @@ document.addEventListener("visibilitychange",wake);wake();
 
 render();
 setTimeout(connect,0);
+(function resumeLive(){const j=lsGet("tk.join"),h=lsGet("tk.host");
+  if(j)joinTable(j);else if(h&&S.core.camps.some(c=>c.id===h.campId))goLive(h.code,h.campId);})();
 })();
 </script>
 
