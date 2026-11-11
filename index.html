@@ -290,6 +290,142 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .csec .clist{max-width:none}
 .csec-start{margin:22px auto 0;max-width:520px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:16px;border:1px dashed var(--line);border-radius:var(--r)}
 .picks .btn{width:100%}
+/* DM Live: campaign blocks and the live campaign screen */
+.dl-home-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
+.dl-home-h h2,.dl-sec-h h2,.dl-h2{font-family:var(--f-display);font-weight:400;margin:0;font-size:1.55rem;color:var(--brass)}
+.dl-home-acts{display:flex;gap:8px;flex-wrap:wrap}
+.dl-blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:12px;margin-top:14px}
+.dl-block{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,transform .15s;min-height:150px}
+.dl-block:hover{border-color:var(--brass);transform:translateY(-2px)}
+.dl-block-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.dl-block-name{font-family:var(--f-display);font-size:1.45rem;line-height:1.1;color:var(--ink)}
+.dl-block-badges{display:flex;gap:6px;flex-wrap:wrap}
+.dl-badge{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.dl-badge b{color:var(--brass)}
+.dl-badge.red{border-color:var(--blood);color:#f0a597;background:var(--blood-soft)}
+.dl-badge.green{border-color:var(--heal);color:var(--heal)}
+.dl-block-stats{display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.dl-block-stats b{color:var(--ink)}
+.dl-block-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.dl-mini-hp{position:relative;display:block;height:20px;border-radius:5px;background:var(--raised);overflow:hidden}
+.dl-mini-hp i{position:absolute;inset:0 auto 0 0;opacity:.45}
+.dl-mini-hp em{position:relative;font-style:normal;font-size:.74rem;font-weight:700;padding:0 6px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.dl-block-last{font-size:.85rem;color:var(--muted)}
+.dl-block-last b{color:var(--ink);font-weight:700}
+.dl-bar .dl-title{font-family:var(--f-display);font-weight:400;margin:0;font-size:1.5rem;flex:1 1 160px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-tabs{display:flex;gap:4px;margin-top:12px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.dl-tabs button{padding:9px 14px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.dl-tabs button.on{color:var(--brass);border-bottom-color:var(--brass)}
+.dl-fight{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--blood);background:var(--blood-soft);border-radius:var(--r)}
+.dl-fight-acts{display:flex;gap:8px}
+.dl-strip{display:flex;align-items:center;gap:10px;margin-top:10px;min-width:0}
+.dl-strip-l{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.dl-strip-t{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;padding:2px 0;scrollbar-width:thin}
+.dl-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:4px}
+.dl-main{min-width:0}
+@media (min-width:1080px){
+  .dl-wrap{grid-template-columns:minmax(0,1fr) 360px}
+  .dl-live{position:sticky;top:120px;align-self:start}
+  .dl-panel{max-height:calc(100vh - 140px)}
+  body.in-combat .dl-panel{max-height:calc(100vh - 240px)}
+}
+.dl-live{margin-top:12px}
+.dl-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.btn.dl-mic{width:100%;font-size:1rem}
+.btn.dl-mic.on{background:var(--blood);border-color:var(--blood);color:#fff}
+.dl-status{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted)}
+.dl-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--faint);margin-right:6px;vertical-align:1px}
+.dl-dot.on{background:var(--blood);animation:dlp 1.2s infinite}
+@keyframes dlp{50%{opacity:.3}}
+.dl-prow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.dl-prow .btn{padding:8px 6px;font-size:.82rem;min-height:38px}
+.dl-h{display:flex;justify-content:space-between;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.dl-h span:last-child{font-weight:600;letter-spacing:0;text-transform:none;color:var(--faint)}
+.dl-tx,.dl-feed{overflow:auto;font-size:.88rem;border-top:1px solid var(--line);padding-top:4px}
+.dl-tx{height:230px}
+.dl-feed{max-height:260px}
+@media (min-width:1080px){.dl-tx{height:auto;flex:1 1 40%;min-height:120px}.dl-feed{max-height:none;flex:1 1 35%;min-height:100px}}
+.dl-ln{padding:3px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+.dl-ln.done{color:var(--muted)}
+.dl-tm{font-family:var(--f-num);font-size:.7rem;color:var(--faint);margin-right:6px}
+.dl-interim{color:var(--faint);font-style:italic}
+.dl-faint{color:var(--faint);font-size:.85rem;padding:4px 0}
+.dl-note{display:flex;gap:6px}
+.dl-note input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.dl-note .btn{min-height:38px;padding:8px 12px}
+.dl-fe{display:flex;gap:6px;align-items:flex-start;padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+.dl-ft{flex:1;min-width:0}
+.dl-fe.undone .dl-ft{text-decoration:line-through;color:var(--faint)}
+.dl-why{color:var(--faint);font-size:.8rem}
+.btn.dl-undo{min-height:28px;padding:3px 9px;font-size:.78rem}
+.dl-spin{display:inline-block;width:11px;height:11px;border:2px solid var(--brass);border-right-color:transparent;border-radius:50%;animation:dls .8s linear infinite;margin-right:5px;vertical-align:-1px}
+@keyframes dls{to{transform:rotate(360deg)}}
+.dl-sec-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.dl-sec-h>span{flex:1}
+.dl-sec-h input{flex:1 1 180px;min-width:0;max-width:320px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.dl-npc .pc-top h3{margin:0}
+.dl-npc-b{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.dl-att{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid var(--line);text-transform:capitalize}
+.dl-att.friendly{color:var(--heal);border-color:var(--heal)}
+.dl-att.hostile{color:#f0a597;border-color:var(--blood)}
+.dl-att.neutral{color:#e3cf8a;border-color:#6b5b2c}
+.dl-att.dead{color:var(--faint)}
+.dl-npc-t{white-space:pre-wrap;font-size:.92rem;color:var(--ink);max-height:140px;overflow:auto}
+.dl-filters{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.dl-fchip{font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid var(--line);opacity:.45}
+.dl-fchip.on{opacity:1;border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.dl-tlwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:6px 4px 12px}
+.dl-tl{display:flex;align-items:stretch;min-height:290px;padding:0 10px;width:max-content}
+.dl-tl-sess,.dl-tl-ev{position:relative}
+.dl-tl-sess::before,.dl-tl-ev::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--line)}
+.dl-tl-sess{display:flex;align-items:center;justify-content:center;padding:0 10px;min-width:110px}
+.dl-sbox{position:relative;z-index:1;background:var(--raised);border:1px solid var(--brass);border-radius:9px;padding:6px 10px;text-align:center;font-size:.8rem;max-width:150px;color:var(--muted)}
+.dl-sbox b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.05rem;color:var(--brass)}
+.dl-tl-ev{display:grid;grid-template-rows:1fr 24px 1fr;width:150px;flex:0 0 150px}
+.dl-node{grid-row:2;justify-self:center;width:14px;height:14px;border-radius:50%;margin-top:5px;z-index:1;border:2px solid var(--surface)}
+.dl-stem{position:absolute;left:50%;width:2px;background:var(--line)}
+.dl-tl-ev.up .dl-stem{top:calc(50% - 26px);height:26px}
+.dl-tl-ev.down .dl-stem{top:50%;height:26px}
+.dl-ev{display:flex;flex-direction:column;gap:2px;text-align:left;border-radius:9px;padding:7px 9px;background:var(--raised);border:1px solid var(--line);border-left:4px solid var(--c);font-size:.82rem;margin:0 5px;transition:transform .12s}
+.dl-ev:hover{transform:translateY(-2px);border-color:var(--c)}
+.dl-ev b{font-weight:700;line-height:1.25}
+.dl-ev small{color:var(--faint);font-size:.72rem}
+.dl-tl-ev.up .dl-ev{grid-row:1;align-self:end;margin-bottom:26px}
+.dl-tl-ev.down .dl-ev{grid-row:3;align-self:start}
+.dl-ev-mini{flex:0 0 auto;max-width:190px;margin:0;padding:4px 9px}
+.dl-ev-mini b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-tip{position:fixed;z-index:60;max-width:320px;background:#0f0c0a;border:1px solid var(--brass);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px #000c;font-size:.88rem;pointer-events:none}
+.dl-tip.sticky{pointer-events:auto}
+.dl-tip-k{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dl-tip-t{font-family:var(--f-display);font-size:1.2rem;color:var(--brass);margin:2px 0 4px}
+.dl-tip-r{margin-top:6px}
+.dl-tip-r>span,.dl-tip li span{color:var(--muted)}
+.dl-tip ul{margin:3px 0 0;padding-left:18px}
+.dl-tip-a{display:flex;gap:6px;margin-top:8px}
+.dl-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.dl-card h3{font-family:var(--f-display);font-weight:400;font-size:1.25rem;margin:0 0 8px}
+.dl-card .hint{margin-bottom:10px}
+.dl-j{border-left:4px solid var(--brass)}
+.dl-j-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dl-j-h b{font-family:var(--f-display);font-weight:400;font-size:1.25rem;color:var(--brass);flex:1}
+.dl-j-h span{font-size:.8rem;color:var(--faint)}
+.dl-story{white-space:pre-wrap;margin-top:6px;line-height:1.55}
+.dl-lbl{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dl-h2{margin-top:22px}
+.dl-best{width:100%;border-collapse:collapse;font-size:.9rem}
+.dl-best td,.dl-best th{border-bottom:1px solid var(--line);padding:6px;text-align:left}
+.dl-best th{color:var(--muted);font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.dl-setup{max-width:760px}
+.dl-setup .f input,.dl-setup .f select,.stack .f input,.stack .f select,.stack .f textarea{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0;width:100%}
+.dl-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dl-check{display:flex;gap:8px;align-items:center;margin-top:12px}
+.dl-check input{width:18px;height:18px;accent-color:var(--brass)}
+.dl-surv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dl-surv small{font-size:.7rem;color:var(--muted)}
+.dl-surv small b{color:var(--ink);font-weight:600}
+.dl-sbar{display:flex;gap:2px;margin-top:2px}
+.dl-sbar button{flex:1;height:10px;border-radius:2px;background:var(--raised);padding:0}
+.dl-sbar button.on{background:var(--heal)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -362,9 +498,9 @@ let S=defaults();
 const LS="tablekeeper.v1";
 try{const c=JSON.parse(localStorage.getItem(LS)||"null");if(c&&c.core)S=c;}catch(e){}
 normalise();
-S.core.mode="player"; // the app always opens on the Player tab
+S.core.mode=location.hash==="#dm"?"dm":"player"; // the app opens on the Player tab (or DM with #dm)
 function cache(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
-/* DM Live (dm-live/) edits the party in another tab: pick up its changes and pass them on to a live table */
+/* Table Keeper open in another tab changed the party: pick up its changes and pass them on to a live table */
 addEventListener("storage",e=>{
   if(e.key!==LS||!e.newValue)return;
   try{const n=JSON.parse(e.newValue);if(!n||!n.camps)return;let changed=false;
@@ -480,6 +616,7 @@ function render(){
   document.body.classList.toggle("in-combat",!!(C&&C.active&&C.list.length));
   main.innerHTML=m==="dm"?renderDM():m==="player"?renderPlayer():renderCamps();
   renderTurnbar();
+  if(m==="dm")afterRender();
 }
 function partySummary(ps,dm){
   const down=ps.filter(p=>p.hp<=0).length,totHp=ps.reduce((a,p)=>a+p.hp,0),totMax=ps.reduce((a,p)=>a+p.max,0);
@@ -490,12 +627,12 @@ function dmUnlocked(){const m=activeMeta();return !!(m&&KEYS[m.id])}
 function renderDM(){
   if(!S.core.camps.length)return `<div class="empty"><h2>Run a campaign</h2><p>Create a campaign to get a table code for your players. A DM password keeps the DM screen yours, and lets you open the campaign on another device.</p>
     <div class="join-add" style="justify-content:center"><button class="btn gold" data-act="newCamp">+ Create campaign</button>${LIVE_OK?`<button class="btn" data-act="openCamp">Open with code &amp; password</button>`:""}</div></div>`;
+  if(!S.core.dmOpen||!S.core.camps.some(c=>c.id===S.core.dmOpen))return renderCampHome();
+  if(S.core.active!==S.core.dmOpen)S.core.active=S.core.dmOpen;
   const meta=activeMeta();
-  const opts=S.core.camps.map(c=>`<option value="${c.id}"${c.id===S.core.active?" selected":""}>${esc(c.name)}</option>`).join("")+`<option value="__new">+ New campaign…</option>`+(LIVE_OK?`<option value="__open">Open from another device…</option>`:"");
-  const sel=`<div class="camp"><select id="campSel" aria-label="Campaign">${opts}</select></div>`;
   if(!dmUnlocked()){
     const first=!meta.ver;
-    return `<div class="bar">${sel}</div><form class="lock" data-form="${first?"setpw":"unlock"}">
+    return `<div class="bar dl-bar"><button class="btn" data-act="dlHome">← Campaigns</button><h2 class="dl-title">${esc(meta.name)}</h2></div><form class="lock" data-form="${first?"setpw":"unlock"}">
       <h2>${esc(meta.name)}</h2>
       <p class="hint" style="margin:0;color:var(--muted)">${first?"Set a DM password for this campaign. You'll need it to open the DM screen, and to open this campaign on another device.":"Enter the DM password to open this campaign."}</p>
       <input type="password" id="pw1" autocomplete="${first?"new-password":"current-password"}" placeholder="DM password" aria-label="DM password">
@@ -503,13 +640,7 @@ function renderDM(){
       <p class="hint" id="pwMsg" style="margin:0;color:var(--warn)" hidden></p>
       <button class="btn gold">${first?"Set password":"Open"}</button></form>`;
   }
-  const cp=dmCamp(),ps=cp.players;
-  let h=`<div class="bar">${sel}
-    <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
-    <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button>${LIVE_OK?`<a class="btn" href="dm-live/" style="text-decoration:none;color:inherit" title="Desktop DM screen with live transcription, NPCs and a story timeline">🎙️ DM Live</a>`:""}</div>`;
-  if(!ps.length)h+=`<div class="empty"><h2>No players yet</h2><p>Give players the code <b class="num" style="color:var(--brass)">${esc(meta.code)}</b>. They open <b>My campaigns</b>, join, and add their character. You can also add heroes yourself.</p><div class="join-add" style="justify-content:center"><button class="btn gold" data-act="add">+ Add a player</button></div></div>`;
-  else h+=partySummary(ps,true)+`<div class="grid">`+ps.map(card).join("")+`</div>`;
-  return h+combatSection();
+  return dmLiveView();
 }
 function card(p){
   const st=hpState(p);
@@ -520,9 +651,10 @@ function card(p){
     <div class="abil">${ABIL.map(a=>`<div class="ab"><small>${a.toUpperCase()}</small><b>${p.abil[a]}</b><span>${sg(mod(p.abil[a]))}</span></div>`).join("")}</div>
     <div class="mini"><span>Speed <b>${p.speed}</b></span><span>Passive Perc <b>${pp(p)}</b></span><span>Gold <b>${p.gold}</b></span></div>
     ${p.conds.length?`<div class="conds">${p.conds.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`:""}
+    ${survBlock(p)}
     ${slotBlock(p)}
     <div class="items"><div class="items-h"><span class="lbl">Carrying</span><button class="linkbtn" data-act="items" data-id="${p.id}">Edit items</button></div>
-      ${p.items.length?`<ul>${p.items.map(i=>`<li><span>${esc(i.n)}</span>${i.q>1?`<span class="q">×${i.q}</span>`:""}</li>`).join("")}</ul>`:`<p class="none" style="margin:0">Nothing carried</p>`}</div>
+      ${p.items.length?`<ul>${p.items.map(i=>`<li><span>${i.k==="weapon"?"⚔ ":""}${esc(i.n)}</span>${i.q>1?`<span class="q">×${i.q}</span>`:""}</li>`).join("")}</ul>`:`<p class="none" style="margin:0">Nothing carried</p>`}</div>
     ${spellBlock(p)}
     <div class="pc-foot"><button class="btn" data-act="conds" data-id="${p.id}">Conditions</button><button class="btn" data-act="edit" data-id="${p.id}">Edit stats</button></div>
   </article>`;
@@ -1223,7 +1355,7 @@ function newCampSheet(){
       if(pw.length<4){msg("Use a password of at least 4 characters.");return}
       if(pw!==pw2){msg("The two passwords don't match.");return}
       const id=uid(),meta={id,name:n,code:newCode()};
-      S.core.camps.push(meta);S.camps[id]={players:[],combat:blankCombat()};S.core.active=id;
+      S.core.camps.push(meta);S.camps[id]={players:[],combat:blankCombat()};S.core.active=id;S.core.dmOpen=id;
       await setPassword(meta,pw);commit("camp_"+id);closeSheet();startHost();
     };
   });
@@ -1256,7 +1388,7 @@ function openCampSheet(){
           meta.name=data.name||meta.name;meta.salt=box.salt;meta.ver=box.ver;
           S.camps[meta.id]=Object.assign({players:[],combat:blankCombat()},data.camp||{});
           (data.myMonsters||[]).forEach(m=>{if(!S.core.myMonsters.some(x=>x.id===m.id))S.core.myMonsters.push(m)});
-          KEYS[meta.id]=key;rememberKey(meta.id,bits);S.core.active=meta.id;
+          KEYS[meta.id]=key;rememberKey(meta.id,bits);S.core.active=meta.id;S.core.dmOpen=meta.id;
           commit("core");commit("camp_"+meta.id);closeSheet();startHost();
         }catch(err){msg("Couldn't open that campaign. Check the password.")}
       });c.subscribe(T,{qos:1})},9000).catch(()=>msg("Couldn't reach the internet. Check your connection."));
@@ -1826,6 +1958,609 @@ function rollCheck(p,a){
   toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),3200);
 }
 
+/* ---------- DM Live: campaign blocks, live transcription, AI updates, NPCs, timeline and journey ----------
+   Lives inside the Dungeon Master tab. The party and combat are Table Keeper's own data.
+   Shared notes (NPCs, timeline, journey) are kept on the campaign (camp.live) so they travel with it;
+   the transcript and change log stay on this device (tk.live.<campaignId>). */
+const nrm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();
+const hhmm=t=>new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+const dstr=t=>new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const EVT={
+  plot:{label:"Plot",icon:"📜",c:"#cfa65c"},combat:{label:"Combat",icon:"⚔️",c:"#c4513f"},npc:{label:"NPC",icon:"🗣️",c:"#7fa9cf"},
+  loot:{label:"Loot",icon:"💰",c:"#e0c04f"},location:{label:"Location",icon:"🗺️",c:"#79b06e"},quest:{label:"Quest",icon:"🎯",c:"#a98bd6"},
+  rest:{label:"Rest",icon:"🏕️",c:"#7fb3b0"},death:{label:"Death",icon:"💀",c:"#9a9a9a"}
+};
+const SURV=["food","water","warmth","sleep"];
+const DL_MODELS=[["claude-sonnet-5-5","Claude Sonnet 5.5 (recommended)"],["claude-haiku-5-5","Claude Haiku 5.5 (cheapest)"],["claude-opus-5-5","Claude Opus 5.5 (most capable)"]];
+let SETL=Object.assign({apiKey:"",model:"claude-sonnet-5-5",interval:4},lsGet("tablekeeper.live.settings")||{});
+const saveSETL=()=>lsSet("tablekeeper.live.settings",SETL);
+let tlFilter=new Set(Object.keys(EVT)),tlQ="",npcQ="";
+
+function DL(){
+  const id=S.core.active,c=dmCamp();
+  if(!c.live){
+    c.live={sessionNo:1,sessionStart:null,survival:false,surv:{},npcs:[],timeline:[],journey:[],story:"",fight:null,fightEnd:false};
+    // Bring across notes from the earlier stand-alone DM Live page
+    const old=lsGet("tablekeeper.live."+id);
+    if(old){
+      Object.assign(c.live,{npcs:old.npcs||[],timeline:old.timeline||[],journey:old.journey||[],story:old.story||"",sessionNo:old.sessionNo||1,sessionStart:old.sessionStart||null,survival:!!old.survival});
+      for(const k in (old.extras||{}))if(old.extras[k].survival)c.live.surv[k]=old.extras[k].survival;
+      const T=ltOf(id);if(!T.transcript.length&&old.transcript){T.transcript=old.transcript;T.processed=old.processed||0;T.feed=old.feed||[];saveLT()}
+      lsSet("tablekeeper.live."+id,null);
+    }
+    if(id)commit(campKey());
+  }
+  const L=c.live;["npcs","timeline","journey"].forEach(k=>{if(!Array.isArray(L[k]))L[k]=[]});L.surv=L.surv||{};
+  return L;
+}
+const LT={};
+function ltOf(id){if(!LT[id])LT[id]=Object.assign({transcript:[],processed:0,feed:[]},lsGet("tk.live."+id)||{});return LT[id]}
+let ltTimer=null;
+function saveLT(){clearTimeout(ltTimer);ltTimer=setTimeout(()=>{for(const id in LT){try{localStorage.setItem("tk.live."+id,JSON.stringify(LT[id]))}catch(e){toastMsg("Storage is full. End the session to clear the transcript.")}}},500)}
+const dlSave=()=>commit(campKey());
+
+/* ---- Campaign blocks (Dungeon Master home) ---- */
+function renderCampHome(){
+  let h=`<div class="dl-home-h"><h2>Your campaigns</h2><div class="dl-home-acts"><button class="btn gold" data-act="newCamp">+ New campaign</button>${LIVE_OK?`<button class="btn" data-act="openCamp">Open with code &amp; password</button>`:""}</div></div><div class="dl-blocks">`;
+  for(const m of S.core.camps){
+    const c=S.camps[m.id]||{players:[]},ps=c.players||[],L=c.live||{},j=(L.journey||[]).slice().sort((a,b)=>b.session-a.session)[0];
+    const hp=ps.reduce((a,p)=>a+p.hp,0),mx=ps.reduce((a,p)=>a+p.max,0),down=ps.filter(p=>p.hp<=0).length;
+    const fight=c.combat&&c.combat.active,live=H.campId===m.id&&H.status==="ok",locked=!KEYS[m.id],listening=wantListen&&micCamp===m.id;
+    h+=`<button class="dl-block" data-act="dlOpen" data-camp="${m.id}">
+      <div class="dl-block-top"><span class="dl-block-name">${esc(m.name)}</span>${locked?`<span class="dl-lockic" title="Locked">🔒</span>`:""}</div>
+      <div class="dl-block-badges">${fight?`<span class="dl-badge red">⚔️ In combat</span>`:""}${listening?`<span class="dl-badge red">🎙️ Listening</span>`:""}${live?`<span class="dl-badge green">Live table</span>`:""}<span class="dl-badge">Code <b class="num">${esc(m.code)}</b></span></div>
+      <div class="dl-block-stats"><span><b class="num">${ps.length}</b> heroes</span>${ps.length?`<span>HP <b class="num">${hp}/${mx}</b></span>`:""}${down?`<span style="color:var(--blood)"><b class="num">${down}</b> down</span>`:""}<span>Session <b class="num">${L.sessionNo||1}</b></span></div>
+      ${ps.length?`<div class="dl-block-party">${ps.slice(0,6).map(p=>`<span class="dl-mini-hp" title="${esc(p.name)} ${p.hp}/${p.max}"><i style="width:${clamp(p.hp/Math.max(1,p.max)*100,0,100)}%;background:${p.hp/Math.max(1,p.max)>.5?"var(--heal)":p.hp/Math.max(1,p.max)>.25?"var(--warn)":"var(--blood)"}"></i><em>${esc(p.name)}</em></span>`).join("")}</div>`:""}
+      <div class="dl-block-last">${j?`Last time: <b>${esc(j.title)}</b>`:`<span style="color:var(--faint)">No sessions logged yet</span>`}</div>
+    </button>`;
+  }
+  return h+`</div>`;
+}
+
+/* ---- Campaign view ---- */
+function dmLiveView(){
+  const meta=activeMeta(),cp=dmCamp(),L=DL(),tk=S.core.dmTab||"party";
+  let h=`<div class="bar dl-bar"><button class="btn" data-act="dlHome">← Campaigns</button><h2 class="dl-title">${esc(meta.name)}</h2>
+    <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
+    <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
+  h+=`<nav class="dl-tabs">${[["party","Party"+(cp.combat.active?" ⚔️":"")],["npcs","NPCs"],["timeline","Timeline"],["journey","Journey"],["setup","Live setup"]].map(([k,l])=>`<button class="${tk===k?"on":""}" data-act="dlTab" data-k="${k}">${l}</button>`).join("")}</nav>`;
+  if(L.fight&&!cp.combat.active)h+=`<div class="dl-fight"><span>⚔️ <b>Fight detected</b>${L.fight.monsters&&L.fight.monsters.length?": "+esc(L.fight.monsters.map(m=>m.name+(m.count>1?" ×"+m.count:"")).join(", ")):""}</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFight">Start combat</button><button class="btn ghost" data-act="dlFightNo">Dismiss</button></span></div>`;
+  if(L.fightEnd&&cp.combat.active)h+=`<div class="dl-fight"><span>🏳️ Sounds like the fight is over.</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFightEnd">End combat</button><button class="btn ghost" data-act="dlFightEndNo">Not yet</button></span></div>`;
+  h+=`<div class="dl-strip"><span class="dl-strip-l">Latest</span><div class="dl-strip-t" id="dlStrip">${stripHTML(L)}</div></div>`;
+  let body="";
+  if(tk==="npcs")body=npcsHTML(L);
+  else if(tk==="timeline")body=timelineHTML(L);
+  else if(tk==="journey")body=journeyHTML(L);
+  else if(tk==="setup")body=setupHTML(L);
+  else{
+    const ps=cp.players;
+    if(cp.combat.active)body+=combatSection();
+    if(!ps.length)body+=`<div class="empty"><h2>No players yet</h2><p>Give players the code <b class="num" style="color:var(--brass)">${esc(meta.code)}</b>. They open <b>My campaigns</b>, join, and add their character. You can also add heroes yourself.</p><div class="join-add" style="justify-content:center"><button class="btn gold" data-act="add">+ Add a player</button></div></div>`;
+    else body+=partySummary(ps,true)+`<div class="grid">`+ps.map(card).join("")+`</div>`;
+    if(!cp.combat.active)body+=combatSection();
+  }
+  return h+`<div class="dl-wrap"><div class="dl-main">${body}</div><aside class="dl-live">${panelHTML()}</aside></div>`;
+}
+function survBlock(p){
+  if(S.core.mode!=="dm"||!dmUnlocked())return "";
+  const c=dmCamp();if(!c.live||!c.live.survival||!c.players.some(q=>q.id===p.id))return "";
+  const s=c.live.surv[p.id]||{food:5,water:5,warmth:5,sleep:5};
+  return `<div class="dl-surv">${SURV.map(k=>{const v=s[k]??5;return `<div><small>${k[0].toUpperCase()+k.slice(1)} <b class="num">${v}/5</b></small><div class="dl-sbar">${[1,2,3,4,5].map(i=>`<button class="${i<=v?"on":""}" data-act="dlSurv" data-id="${p.id}" data-k="${k}" data-v="${i===v?i-1:i}" aria-label="${k} ${i}"></button>`).join("")}</div></div>`}).join("")}</div>`;
+}
+
+/* ---- Live panel ---- */
+function panelHTML(){
+  const T=ltOf(S.core.active),here=micCamp===S.core.active||!wantListen;
+  return `<div class="dl-panel">
+    <button class="btn dl-mic${wantListen&&here?" on":""}" data-act="dlMic"${!here?" disabled":""}>${!here?"🎙️ Listening in another campaign":wantListen?"⏸ Stop listening":"🎙️ Start listening"}</button>
+    <div class="dl-status"><span id="dlMicSt"><i class="dl-dot${wantListen&&here?" on":""}"></i>${wantListen&&here?"Listening":"Mic off"}</span><span id="dlAiSt">${aiStatus()}</span></div>
+    <div class="dl-prow"><button class="btn" data-act="dlCheck">⚡ Check now</button><button class="btn" data-act="dlTx">⬇ Transcript</button><button class="btn gold" data-act="dlEnd">End session</button></div>
+    <div class="dl-h"><span>Live transcript</span><span id="dlWords"></span></div>
+    <div class="dl-tx" id="dlTxBox">${txHTML(T)}</div>
+    <form class="dl-note" data-form="dlNote"><input id="dlNoteIn" type="text" placeholder="Type a note, e.g. Brakka takes 9" aria-label="Add a note to the transcript"><button class="btn">Add</button></form>
+    <div class="dl-h"><span>Changes made</span><span>undo anything wrong</span></div>
+    <div class="dl-feed">${feedHTML(T)}</div></div>`;
+}
+function txHTML(T){
+  const st=Math.max(0,T.transcript.length-250);
+  return (st?`<div class="dl-faint">${st} earlier lines hidden (still saved)</div>`:"")+
+    T.transcript.slice(st).map((l,i)=>`<div class="dl-ln${st+i<T.processed?" done":""}"><span class="dl-tm">${hhmm(l.t)}</span>${esc(l.x)}</div>`).join("")+
+    (interim&&micCamp===S.core.active?`<div class="dl-interim">${esc(interim)}</div>`:"")+
+    (!T.transcript.length&&!interim?`<div class="dl-faint">Press <b>Start listening</b>, or type notes below. Greyed lines have already been read by the AI.</div>`:"");
+}
+function feedHTML(T){
+  const list=T.feed.slice(-120).reverse();
+  return list.length?list.map(f=>`<div class="dl-fe${f.undone?" undone":""}"><span class="dl-tm">${hhmm(f.ts)}</span><div class="dl-ft">${esc(f.text)}${f.why?`<div class="dl-why">${esc(f.why)}</div>`:""}</div>${f.undone||!f.undo||f.undo.k==="none"?"":`<button class="btn dl-undo" data-act="dlUndo" data-fid="${f.id}">Undo</button>`}</div>`).join("")
+    :`<div class="dl-faint">Changes from the AI show up here.</div>`;
+}
+function refreshTx(){
+  const box=document.getElementById("dlTxBox");if(!box||micCamp!==S.core.active)return;
+  const atB=box.scrollHeight-box.scrollTop-box.clientHeight<40;
+  box.innerHTML=txHTML(ltOf(S.core.active));if(atB)box.scrollTop=box.scrollHeight;
+  const w=document.getElementById("dlWords");if(w){const n=ltOf(S.core.active).transcript.reduce((a,l)=>a+l.x.split(/\s+/).length,0);w.textContent=n?n.toLocaleString("en-GB")+" words":""}
+}
+function afterRender(){
+  const box=document.getElementById("dlTxBox");if(box)box.scrollTop=box.scrollHeight;
+  const st=document.getElementById("dlStrip");if(st)st.scrollLeft=st.scrollWidth;
+  const tw=document.querySelector(".dl-tlwrap");if(tw)tw.scrollLeft=tw.scrollWidth;
+}
+
+/* ---- NPCs ---- */
+function npcsHTML(L){
+  return `<div class="dl-sec-h"><h2>NPCs</h2><input type="search" data-dlq="npc" value="${esc(npcQ)}" placeholder="Search NPCs" aria-label="Search NPCs"><button class="btn gold" data-act="dlNpc">+ NPC</button></div><div id="dlNpcList">${npcListHTML(L)}</div>`;
+}
+function npcListHTML(L){
+  if(!L.npcs.length)return `<div class="empty"><h2>No NPCs yet</h2><p>They appear here as the party meets them, or add one yourself.</p></div>`;
+  const q=nrm(npcQ),list=L.npcs.filter(n=>!q||nrm([n.name,n.role,n.location,n.background,n.notes].join(" ")).includes(q));
+  if(!list.length)return `<p class="hint" style="margin-top:14px">No NPCs match that search.</p>`;
+  return `<div class="grid">`+list.map(n=>`<article class="pc dl-npc">
+    <div class="pc-top"><div><h3>${esc(n.name)}</h3><p class="sub">${esc([n.role,n.location].filter(Boolean).join(" · "))}${n.firstSeen?" · met session "+n.firstSeen:""}</p></div>
+    <div class="dl-npc-b">${n.status&&n.status!=="alive"?`<span class="dl-att dead">${esc(n.status)}</span>`:""}<span class="dl-att ${esc(n.attitude||"neutral")}">${esc(n.attitude||"neutral")}</span></div></div>
+    ${n.background?`<div class="dl-npc-t">${esc(n.background)}</div>`:""}
+    ${n.items&&n.items.length?`<div class="items"><div class="items-h"><span class="lbl">Items</span></div><ul>${n.items.map(i=>`<li><span>${esc(i)}</span></li>`).join("")}</ul></div>`:""}
+    ${n.notes?`<div><span class="lbl" style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">DM notes</span><div class="dl-npc-t">${esc(n.notes)}</div></div>`:""}
+    <div class="pc-foot"><button class="btn" data-act="dlNpc" data-nid="${n.id}">Edit</button></div></article>`).join("")+`</div>`;
+}
+function npcSheet(id){
+  const L=DL(),n=id?L.npcs.find(x=>x.id===id):{name:"",role:"",location:"",attitude:"neutral",status:"alive",background:"",items:[],notes:"",firstSeen:L.sessionNo};
+  if(!n)return;
+  openSheet(`<h2>${id?"Edit":"Add"} NPC</h2><div class="stack">
+    <div class="f"><label for="n-name">Name</label><input id="n-name" value="${esc(n.name)}"></div>
+    <div class="dl-2"><div class="f"><label for="n-role">Who they are</label><input id="n-role" value="${esc(n.role)}"></div><div class="f"><label for="n-loc">Location</label><input id="n-loc" value="${esc(n.location)}"></div></div>
+    <div class="dl-2"><div class="f"><label for="n-att">Attitude</label><select id="n-att">${["friendly","neutral","hostile"].map(a=>`<option${n.attitude===a?" selected":""}>${a}</option>`).join("")}</select></div>
+      <div class="f"><label for="n-st">Status</label><select id="n-st">${["alive","dead","missing"].map(a=>`<option${n.status===a?" selected":""}>${a}</option>`).join("")}</select></div></div>
+    <div class="f"><label for="n-bg">Background</label><textarea id="n-bg" rows="4">${esc(n.background)}</textarea></div>
+    <div class="f"><label for="n-items">Items (comma separated)</label><input id="n-items" value="${esc((n.items||[]).join(", "))}"></div>
+    <div class="f"><label for="n-notes">DM notes and secrets</label><textarea id="n-notes" rows="3">${esc(n.notes)}</textarea></div>
+    <div class="f"><label for="n-first">First met (session)</label><input id="n-first" type="number" inputmode="numeric" value="${n.firstSeen||""}"></div>
+    <div class="foot">${id?`<button class="btn danger" data-x="del">Delete</button>`:"<span></span>"}<button class="btn gold" data-x="save">Save</button></div></div>`,b=>{
+    const v=k=>b.querySelector("#"+k).value;
+    b.querySelector('[data-x="save"]').onclick=()=>{
+      const name=v("n-name").trim();if(!name){toastMsg("Give the NPC a name");return}
+      let x=id?n:null;if(!x){x={id:uid()};L.npcs.push(x)}
+      Object.assign(x,{name,role:v("n-role").trim(),location:v("n-loc").trim(),attitude:v("n-att"),status:v("n-st"),background:v("n-bg"),items:v("n-items").split(",").map(s=>s.trim()).filter(Boolean),notes:v("n-notes"),firstSeen:+v("n-first")||L.sessionNo});
+      dlSave();closeSheet();
+    };
+    const d=b.querySelector('[data-x="del"]');if(d)d.onclick=()=>{if(d.dataset.armed!=="1"){d.dataset.armed="1";d.textContent="Tap again to delete";return}L.npcs=L.npcs.filter(x=>x.id!==id);dlSave();closeSheet()};
+  });
+}
+
+/* ---- Timeline ---- */
+function evOk(e){if(!tlFilter.has(e.type))return false;const q=nrm(tlQ);if(!q)return true;return nrm([e.title,e.detail,(e.who||[]).join(" "),(e.monsters||[]).map(m=>m.name).join(" ")].join(" ")).includes(q)}
+function timelineHTML(L){
+  return `<div class="dl-sec-h"><h2>Timeline</h2><input type="search" data-dlq="tl" value="${esc(tlQ)}" placeholder="Search events, people, monsters" aria-label="Search the timeline"><button class="btn gold" data-act="dlEv">+ Event</button></div>
+    <div class="dl-filters">${Object.entries(EVT).map(([k,t])=>`<button class="dl-fchip${tlFilter.has(k)?" on":""}" style="--c:${t.c}" data-act="dlFilt" data-k="${k}">${t.icon} ${t.label}</button>`).join("")}</div>
+    <div class="dl-tlwrap" id="dlTl">${trackHTML(L)}</div><p class="hint" style="margin-top:8px">Hover over a box (or tap it on a phone) to see what happened. Use Edit in the pop-up to change or delete it.</p>`;
+}
+function trackHTML(L){
+  if(!L.timeline.length)return `<div class="empty" style="margin:16px"><h2>Nothing yet</h2><p>The timeline fills up as you play. Start listening, or add an event yourself.</p></div>`;
+  const evs=L.timeline.filter(evOk);
+  if(!evs.length)return `<p class="hint" style="padding:20px">Nothing matches those filters.</p>`;
+  let h=`<div class="dl-tl">`,last=null,i=0;
+  for(const e of evs){
+    if(e.session!==last){last=e.session;i=0;const j=L.journey.find(x=>x.session===e.session);
+      h+=`<div class="dl-tl-sess"><div class="dl-sbox"${j?` data-jid="${j.id}"`:""}><b>Session ${e.session}</b>${j?esc(j.title):e.session===L.sessionNo?"In progress":""}</div></div>`}
+    const t=EVT[e.type]||EVT.plot;
+    h+=`<div class="dl-tl-ev ${i++%2?"down":"up"}"><div class="dl-stem"></div><button class="dl-ev" style="--c:${t.c}" data-eid="${e.id}" data-act="dlEvTap"><b>${t.icon} ${esc(e.title)}</b><small>${hhmm(e.ts)}${e.monsters&&e.monsters.length?" · "+e.monsters.reduce((a,m)=>a+(m.count||1),0)+" monsters":""}</small></button><i class="dl-node" style="background:${t.c}"></i></div>`;
+  }
+  return h+`</div>`;
+}
+function stripHTML(L){
+  const evs=L.timeline.slice(-14);
+  return evs.length?evs.map(e=>{const t=EVT[e.type]||EVT.plot;return `<button class="dl-ev dl-ev-mini" style="--c:${t.c}" data-eid="${e.id}" data-act="dlEvTap"><b>${t.icon} ${esc(e.title)}</b></button>`}).join(""):`<span class="dl-faint">Events appear here as they happen.</span>`;
+}
+function evSheet(id){
+  const L=DL(),e=id?L.timeline.find(x=>x.id===id):{type:"plot",title:"",detail:"",who:[],monsters:[],session:L.sessionNo};
+  if(!e)return;
+  openSheet(`<h2>${id?"Edit":"Add"} event</h2><div class="stack">
+    <div class="dl-2"><div class="f"><label for="e-type">Type</label><select id="e-type">${Object.entries(EVT).map(([k,t])=>`<option value="${k}"${e.type===k?" selected":""}>${t.icon} ${t.label}</option>`).join("")}</select></div>
+      <div class="f"><label for="e-sess">Session</label><input id="e-sess" type="number" inputmode="numeric" value="${e.session}"></div></div>
+    <div class="f"><label for="e-title">Title (a few words)</label><input id="e-title" value="${esc(e.title)}"></div>
+    <div class="f"><label for="e-detail">What happened</label><textarea id="e-detail" rows="4">${esc(e.detail)}</textarea></div>
+    <div class="f"><label for="e-who">Who was involved (comma separated)</label><input id="e-who" value="${esc((e.who||[]).join(", "))}"></div>
+    <div class="f"><label for="e-mon">Monsters, one per line, e.g. Goblin x3 - defeated</label><textarea id="e-mon" rows="3">${esc((e.monsters||[]).map(m=>m.name+(m.count>1?" x"+m.count:"")+(m.outcome?" - "+m.outcome:"")).join("\n"))}</textarea></div>
+    <div class="foot">${id?`<button class="btn danger" data-x="del">Delete</button>`:"<span></span>"}<button class="btn gold" data-x="save">Save</button></div></div>`,b=>{
+    const v=k=>b.querySelector("#"+k).value;
+    b.querySelector('[data-x="save"]').onclick=()=>{
+      const title=v("e-title").trim();if(!title){toastMsg("Give the event a title");return}
+      const mons=v("e-mon").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const[a,o]=l.split(/\s+-\s+/),m=a.match(/^(.*?)\s*[x×]\s*(\d+)$/i);return{name:(m?m[1]:a).trim(),count:m?+m[2]:1,outcome:(o||"").trim()}});
+      const d={type:v("e-type"),session:+v("e-sess")||L.sessionNo,title,detail:v("e-detail").trim(),who:v("e-who").split(",").map(s=>s.trim()).filter(Boolean),monsters:mons};
+      if(id)Object.assign(e,d);else L.timeline.push(Object.assign({id:uid(),ts:Date.now()},d));
+      L.timeline.sort((a,c)=>a.session-c.session||a.ts-c.ts);dlSave();closeSheet();
+    };
+    const dl=b.querySelector('[data-x="del"]');if(dl)dl.onclick=()=>{L.timeline=L.timeline.filter(x=>x.id!==id);dlSave();closeSheet()};
+  });
+}
+/* Hover cards for timeline boxes and session markers */
+const tip=document.createElement("div");tip.className="dl-tip";tip.hidden=true;document.body.appendChild(tip);
+let tipFor=null;
+function showTip(box,sticky){
+  const c=S.camps[S.core.active],L=c&&c.live;if(!L)return;
+  if(box.dataset.eid){
+    const ev=L.timeline.find(x=>x.id===box.dataset.eid);if(!ev)return;const t=EVT[ev.type]||EVT.plot;
+    tip.innerHTML=`<div class="dl-tip-k" style="color:${t.c}">${t.icon} ${t.label} · Session ${ev.session} · ${hhmm(ev.ts)}</div><div class="dl-tip-t">${esc(ev.title)}</div>${ev.detail?`<div>${esc(ev.detail)}</div>`:""}
+      ${ev.who&&ev.who.length?`<div class="dl-tip-r"><span>Involved:</span> ${esc(ev.who.join(", "))}</div>`:""}
+      ${ev.monsters&&ev.monsters.length?`<div class="dl-tip-r"><span>Monsters:</span><ul>${ev.monsters.map(m=>`<li>${esc(m.name)}${m.count>1?" ×"+m.count:""}${m.outcome?` <span>(${esc(m.outcome)})</span>`:""}</li>`).join("")}</ul></div>`:""}
+      ${sticky?`<div class="dl-tip-a"><button class="btn" data-act="dlEv" data-eid2="${ev.id}">Edit</button><button class="btn ghost" data-act="dlTipX">Close</button></div>`:""}`;
+  }else if(box.dataset.jid){
+    const j=L.journey.find(x=>x.id===box.dataset.jid);if(!j)return;
+    tip.innerHTML=`<div class="dl-tip-k">Session ${j.session} · ${dstr(j.date)}</div><div class="dl-tip-t">${esc(j.title)}</div><div>${esc(j.summary.length>600?j.summary.slice(0,600)+"…":j.summary)}</div>`;
+  }else return;
+  tip.hidden=false;tip.classList.toggle("sticky",!!sticky);tipFor=box;
+  const r=box.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight;
+  let y=r.bottom+8;if(y+th>innerHeight-8)y=r.top-th-8;
+  tip.style.left=clamp(r.left+r.width/2-tw/2,8,innerWidth-tw-8)+"px";tip.style.top=Math.max(8,y)+"px";
+}
+function hideTip(){tip.hidden=true;tipFor=null;tip.classList.remove("sticky")}
+document.addEventListener("mouseover",e=>{
+  if(tip.classList.contains("sticky"))return;
+  const box=e.target.closest(".dl-ev,[data-jid]");
+  if(!box){if(!e.target.closest(".dl-tip"))hideTip();return}
+  if(box!==tipFor)showTip(box,false);
+});
+addEventListener("scroll",()=>{if(!tip.classList.contains("sticky"))hideTip()},{passive:true,capture:true});
+
+/* ---- Journey ---- */
+function journeyHTML(L){
+  let h=`<div class="dl-sec-h"><h2>The journey so far</h2><span></span><button class="btn" data-act="dlStory" id="dlStoryBtn">✨ Write "story so far"</button><button class="btn gold" data-act="dlJ">+ Summary</button></div>`;
+  if(L.story)h+=`<div class="dl-card"><span class="lbl dl-lbl">Story so far</span><div class="dl-story">${esc(L.story)}</div></div>`;
+  if(!L.journey.length)h+=`<div class="empty"><h2>No sessions yet</h2><p>A summary of each session appears here when you press <b>End session</b>.</p></div>`;
+  for(const j of L.journey.slice().sort((a,b)=>b.session-a.session))
+    h+=`<div class="dl-card dl-j"><div class="dl-j-h"><b>Session ${j.session}: ${esc(j.title)}</b><span>${dstr(j.date)}</span><button class="linkbtn" data-act="dlJ" data-jid2="${j.id}">Edit</button></div><div class="dl-story">${esc(j.summary)}</div></div>`;
+  const best={};
+  for(const e of L.timeline)for(const m of (e.monsters||[])){const k=nrm(m.name).replace(/s$/,"");if(!k)continue;best[k]=best[k]||{name:m.name,count:0,s:new Set(),o:new Set()};best[k].count+=m.count||1;best[k].s.add(e.session);if(m.outcome)best[k].o.add(m.outcome)}
+  const rows=Object.values(best).sort((a,b)=>b.count-a.count);
+  if(rows.length)h+=`<h2 class="dl-h2">Monsters encountered</h2><div class="dl-card"><table class="dl-best"><tr><th>Monster</th><th>Total</th><th>Sessions</th><th>Outcomes</th></tr>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.count}</td><td class="num">${[...r.s].join(", ")}</td><td>${esc([...r.o].join(", "))}</td></tr>`).join("")}</table></div>`;
+  return h;
+}
+function jSheet(id){
+  const L=DL(),j=id?L.journey.find(x=>x.id===id):{session:L.sessionNo,title:"",summary:"",date:Date.now()};if(!j)return;
+  openSheet(`<h2>${id?"Edit":"Add"} session summary</h2><div class="stack">
+    <div class="dl-2"><div class="f"><label for="j-s">Session</label><input id="j-s" type="number" inputmode="numeric" value="${j.session}"></div><div class="f"><label for="j-t">Title</label><input id="j-t" value="${esc(j.title)}"></div></div>
+    <div class="f"><label for="j-sum">Summary</label><textarea id="j-sum" rows="10">${esc(j.summary)}</textarea></div>
+    <div class="foot">${id?`<button class="btn danger" data-x="del">Delete</button>`:"<span></span>"}<button class="btn gold" data-x="save">Save</button></div></div>`,b=>{
+    const v=k=>b.querySelector("#"+k).value;
+    b.querySelector('[data-x="save"]').onclick=()=>{const d={session:+v("j-s")||L.sessionNo,title:v("j-t").trim()||"Untitled session",summary:v("j-sum").trim()};
+      if(id)Object.assign(j,d);else L.journey.push(Object.assign({id:uid(),date:Date.now()},d));dlSave();closeSheet()};
+    const dl=b.querySelector('[data-x="del"]');if(dl)dl.onclick=()=>{if(dl.dataset.armed!=="1"){dl.dataset.armed="1";dl.textContent="Tap again to delete";return}L.journey=L.journey.filter(x=>x.id!==id);dlSave();closeSheet()};
+  });
+}
+
+/* ---- Live setup ---- */
+function setupHTML(L){
+  const custom=!DL_MODELS.some(m=>m[0]===SETL.model);
+  return `<div class="dl-setup">
+  <div class="dl-card"><h3>This campaign</h3>
+    <div class="dl-2"><div class="f"><label for="ls-no">Current session number</label><input id="ls-no" type="number" inputmode="numeric" data-dlset="sessionNo" value="${L.sessionNo}"></div><span></span></div>
+    <label class="dl-check"><input type="checkbox" data-dlset="survival"${L.survival?" checked":""}> Track survival (food, water, warmth, sleep) on each hero's card</label></div>
+  <div class="dl-card"><h3>Live AI (Anthropic API)</h3>
+    <p class="hint">Needed for the AI to read the transcript. The key is saved only in this browser, never on the website or with the campaign.</p>
+    <div class="f"><label for="ls-key">API key</label><input id="ls-key" type="password" data-dlset="apiKey" value="${esc(SETL.apiKey)}" placeholder="sk-ant-..."></div>
+    <div class="dl-2"><div class="f"><label for="ls-model">Model</label><select id="ls-model" data-dlset="model">${DL_MODELS.map(([v,l])=>`<option value="${v}"${SETL.model===v?" selected":""}>${l}</option>`).join("")}<option value="custom"${custom?" selected":""}>Other</option></select></div>
+      <div class="f"><label for="ls-int">Check every (minutes)</label><input id="ls-int" type="number" inputmode="numeric" min="1" max="30" data-dlset="interval" value="${SETL.interval}"></div></div>
+    ${custom?`<div class="f"><label for="ls-mc">Model id</label><input id="ls-mc" data-dlset="modelCustom" value="${esc(SETL.model)}"></div>`:""}
+    <div class="foot" style="justify-content:flex-start;align-items:center"><button class="btn" data-act="dlTest">Test the key</button><span id="dlTestOut" class="hint"></span></div></div>
+  <div class="dl-card"><h3>Backup</h3><p class="hint">NPCs, timeline and journey are saved with the campaign. The transcript stays on this device until you end the session.</p>
+    <div class="foot" style="justify-content:flex-start"><button class="btn" data-act="dlExport">⬇ Export DM Live notes</button><button class="btn" data-act="dlImport">⬆ Import notes</button><input type="file" id="dlImportF" accept=".json" hidden></div></div>
+  <div class="dl-card"><h3>Example data</h3><p class="hint">Fill this campaign's NPCs and timeline with a short example story so you can see how it looks.</p>
+    <div class="foot" style="justify-content:flex-start"><button class="btn" data-act="dlDemo">Add example story</button><button class="btn danger" data-act="dlClear">Clear DM Live notes</button></div></div></div>`;
+}
+function setChange(t){
+  const k=t.dataset.dlset,L=DL();
+  if(k==="sessionNo"){L.sessionNo=Math.max(1,+t.value||1);dlSave();return}
+  if(k==="survival"){L.survival=t.checked;dlSave();return}
+  if(k==="apiKey"){SETL.apiKey=t.value.trim();saveSETL();toastMsg("API key saved in this browser");return}
+  if(k==="model"){if(t.value!=="custom")SETL.model=t.value;else SETL.model=SETL.model||"claude-sonnet-5-5";saveSETL();if(t.value==="custom"){SETL.model="custom-model";render()}return}
+  if(k==="modelCustom"){SETL.model=t.value.trim()||"claude-sonnet-5-5";saveSETL();return}
+  if(k==="interval"){SETL.interval=clamp(+t.value||4,1,30);saveSETL();return}
+}
+function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+/* ---- Change engine (AI and manual), every change can be undone ---- */
+function plByName(name){
+  const ps=dmCamp().players,n=nrm(name);if(!n)return null;const f=n.split(" ")[0];
+  return ps.find(p=>nrm(p.name)===n)||ps.find(p=>nrm(p.name).split(" ")[0]===f)||ps.find(p=>nrm(p.name).includes(n)||n.includes(nrm(p.name)));
+}
+function monByName(name){
+  const C=dmCamp().combat;if(!C.active)return null;const n=nrm(name),ms=C.list.filter(e=>e.kind==="m");
+  return ms.find(e=>nrm(e.name)===n)||ms.find(e=>nrm(e.name).startsWith(n)&&e.hp>0)||ms.find(e=>nrm(e.base||"")===n&&e.hp>0);
+}
+function npcByName(name){const L=DL(),n=nrm(name);if(!n)return null;const f=n.split(" ")[0];return L.npcs.find(x=>nrm(x.name)===n)||(f.length>2?L.npcs.find(x=>nrm(x.name).split(" ")[0]===f):null)}
+function canonCond(c){c=String(c||"").trim();if(!c)return "";return CONDS.find(x=>x.toLowerCase()===c.toLowerCase())||c[0].toUpperCase()+c.slice(1)}
+function applyChange(c){
+  const L=DL(),why=c.reason||"",t=c.type;
+  const E=(text,undo)=>({id:uid(),ts:Date.now(),text,why,undo});
+  if(t==="monster_hp"){
+    const m=monByName(c.target);if(!m)return null;const a=+c.amount||0;if(!a)return null;
+    const b={hp:m.hp,temp:m.temp||0};if(a<0)damage(m,-a);else heal(m,a);
+    return E(`${a<0?"🗡️":"💚"} ${m.name} ${a<0?"takes "+(-a):"heals "+a} (HP ${b.hp} → ${m.hp})`,{k:"mon",mid:m.id,dH:m.hp-b.hp,dT:(m.temp||0)-b.temp});
+  }
+  if(t==="combat_start"){if(dmCamp().combat.active)return null;L.fight={ts:Date.now(),monsters:(c.monsters||[]).filter(m=>m&&m.name).map(m=>({name:m.name,count:Math.max(1,+m.count||1),ac:+m.ac||0,hp:+m.hp||0}))};return E("⚔️ Fight detected: ready to start combat",{k:"fight"})}
+  if(t==="combat_end"){if(!dmCamp().combat.active)return null;L.fightEnd=true;return null}
+  if(t==="rest"){
+    const ps=dmCamp().players,before=ps.map(p=>({id:p.id,hp:p.hp,temp:p.temp,conds:[...p.conds],slots:JSON.parse(JSON.stringify(slotsOf(p))),surv:L.surv[p.id]?{...L.surv[p.id]}:null}));
+    if(c.kind==="long"){ps.forEach(p=>{p.hp=p.max;p.temp=0;p.conds=p.conds.filter(x=>x!=="Unconscious");restoreSlots(p);if(L.survival){L.surv[p.id]=Object.assign({food:5,water:5,warmth:5,sleep:5},L.surv[p.id]);L.surv[p.id].sleep=5}});
+      return E("🏕️ Long rest: HP and spell slots restored for everyone",{k:"rest",before})}
+    return E("☕ Short rest taken (add hit dice healing yourself)",{k:"none"});
+  }
+  if(t==="npc_add"){
+    const name=String(c.name||"").trim();if(!name)return null;const ex=npcByName(name);
+    if(ex){const old=JSON.parse(JSON.stringify(ex));["role","location","background"].forEach(f=>{if(c[f]&&!ex[f])ex[f]=c[f]});if(c.attitude)ex.attitude=c.attitude;
+      (c.items||[]).forEach(i=>{if(!ex.items.some(x=>nrm(x)===nrm(i)))ex.items.push(i)});if(c.notes)ex.notes=(ex.notes?ex.notes+"\n":"")+c.notes;
+      return E(`🗣️ Updated NPC ${ex.name}`,{k:"npcR",old})}
+    const n={id:uid(),name,role:c.role||"",location:c.location||"",attitude:["friendly","neutral","hostile"].includes(c.attitude)?c.attitude:"neutral",status:"alive",background:c.background||"",items:Array.isArray(c.items)?c.items:[],notes:c.notes||"",firstSeen:L.sessionNo};
+    L.npcs.push(n);return E(`🗣️ New NPC: ${name}${n.role?" ("+n.role+")":""}`,{k:"npcA",id:n.id});
+  }
+  if(t==="npc_update"){
+    const n=npcByName(c.name);if(!n)return null;const old=JSON.parse(JSON.stringify(n)),f=c.field,v=String(c.value??"");
+    if(f==="notes"||f==="background")n[f]=(n[f]?n[f]+"\n":"")+v;
+    else if(f==="items_add"){if(!n.items.some(x=>nrm(x)===nrm(v)))n.items.push(v)}
+    else if(f==="items_remove")n.items=n.items.filter(x=>nrm(x)!==nrm(v));
+    else if(["attitude","status","location","role"].includes(f))n[f]=v;else return null;
+    return E(`🗣️ ${n.name}: ${f.replace("_"," ")} → ${v.slice(0,80)}`,{k:"npcR",old});
+  }
+  const p=plByName(c.target);if(!p)return null;
+  if(t==="hp"||t==="set_hp"){
+    const a=t==="set_hp"?(+c.value)-p.hp:+c.amount;if(!a||isNaN(a))return null;
+    const b={hp:p.hp,temp:p.temp,conds:[...p.conds]};if(a<0)damage(p,-a);else heal(p,a);
+    if(p.hp===b.hp&&p.temp===b.temp)return null;
+    return E(`${a<0?"🩸":"💚"} ${p.name} ${a<0?"takes "+(-a):"heals "+a} (HP ${b.hp} → ${p.hp}${p.temp!==b.temp?", temp "+b.temp+" → "+p.temp:""})`,{k:"hp",pid:p.id,dH:p.hp-b.hp,dT:p.temp-b.temp,conds:b.conds});
+  }
+  if(t==="temp_hp"){const b=p.temp;p.temp=Math.max(b,+(c.value??c.amount)||0);if(p.temp===b)return null;return E(`🛡️ ${p.name} gains temp HP (${b} → ${p.temp})`,{k:"hp",pid:p.id,dH:0,dT:p.temp-b})}
+  if(t==="spell_slot"){const L1=+c.level,s=slotsOf(p)[L1-1];if(!s||!s.max)return null;const b=s.used;s.used=clamp(s.used+(+c.amount||1),0,s.max);const d=s.used-b;if(!d)return null;
+    return E(`✨ ${p.name} ${d>0?"uses":"regains"} ${Math.abs(d)} level ${L1} slot${Math.abs(d)>1?"s":""} (${s.max-s.used}/${s.max} left)${c.spell?": "+c.spell:""}`,{k:"slot",pid:p.id,i:L1-1,d})}
+  if(t==="item_add"){const name=String(c.item||"").trim();if(!name)return null;const q=Math.max(1,+c.qty||1);let i=p.items.find(x=>nrm(x.n)===nrm(name));
+    if(i)i.q+=q;else{i=it(name,q);if(c.kind==="weapon")i.k="weapon";p.items.push(i)}
+    return E(`🎒 ${p.name} gets ${name}${q>1?" ×"+q:""}`,{k:"iA",pid:p.id,iid:i.id,q})}
+  if(t==="item_remove"){const n=nrm(c.item);const i=p.items.find(x=>nrm(x.n)===n)||p.items.find(x=>nrm(x.n).includes(n)||n.includes(nrm(x.n)));if(!i)return null;
+    const q=Math.min(i.q,Math.max(1,+c.qty||1)),copy={...i,q};i.q-=q;if(i.q<=0)p.items=p.items.filter(x=>x!==i);
+    return E(`📤 ${p.name} loses ${i.n}${q>1?" ×"+q:""}`,{k:"iR",pid:p.id,item:copy})}
+  if(t==="gold"){const d=+c.amount||0;if(!d)return null;const b=p.gold||0;p.gold=b+d;return E(`💰 ${p.name} ${d>0?"gains":"spends"} ${Math.abs(d)} gp (${b} → ${p.gold})`,{k:"gold",pid:p.id,d})}
+  if(t==="condition_add"){const cd=canonCond(c.condition);if(!cd||p.conds.some(x=>x.toLowerCase()===cd.toLowerCase()))return null;p.conds.push(cd);return E(`⚠️ ${p.name} is ${cd.toLowerCase()}`,{k:"cA",pid:p.id,cd})}
+  if(t==="condition_remove"){const n=String(c.condition||"").toLowerCase(),had=p.conds.find(x=>x.toLowerCase()===n);if(!had)return null;p.conds=p.conds.filter(x=>x!==had);return E(`✅ ${p.name} is no longer ${had.toLowerCase()}`,{k:"cR",pid:p.id,cd:had})}
+  if(t==="survival"){const k=String(c.stat||"").toLowerCase();if(!SURV.includes(k))return null;const s=L.surv[p.id]=Object.assign({food:5,water:5,warmth:5,sleep:5},L.surv[p.id]);
+    const b=s[k];s[k]=clamp(b+(+c.amount||0),0,5);const d=s[k]-b;if(!d)return null;return E(`🍖 ${p.name} ${k} ${b} → ${s[k]}`,{k:"surv",pid:p.id,stat:k,d})}
+  return null;
+}
+function addEvent(ev){
+  if(!ev||!ev.title)return null;const L=DL();
+  const e={id:uid(),ts:Date.now(),session:L.sessionNo,type:EVT[ev.type]?ev.type:"plot",title:String(ev.title).slice(0,60),detail:ev.detail||"",who:Array.isArray(ev.who)?ev.who:[],
+    monsters:Array.isArray(ev.monsters)?ev.monsters.filter(m=>m&&m.name).map(m=>({name:m.name,count:Math.max(1,+m.count||1),outcome:m.outcome||""})):[]};
+  L.timeline.push(e);
+  return {id:uid(),ts:Date.now(),text:`${EVT[e.type].icon} Timeline: ${e.title}`,why:"",undo:{k:"ev",id:e.id}};
+}
+function pushFeed(list){list=list.filter(Boolean);if(!list.length)return;const T=ltOf(S.core.active);T.feed.push(...list);if(T.feed.length>300)T.feed=T.feed.slice(-300);saveLT()}
+function undo(fid){
+  const T=ltOf(S.core.active),f=T.feed.find(x=>x.id===fid);if(!f||f.undone)return;
+  const u=f.undo,L=DL(),ps=dmCamp().players,p=u.pid?ps.find(x=>x.id===u.pid):null;
+  switch(u.k){
+    case "hp":if(p){p.hp=clamp(p.hp-u.dH,0,p.max);p.temp=Math.max(0,p.temp-u.dT);if(u.conds)p.conds=u.conds}break;
+    case "mon":{const m=dmCamp().combat.list.find(e=>e.id===u.mid);if(m){m.hp=clamp(m.hp-u.dH,0,m.max);m.temp=Math.max(0,(m.temp||0)-u.dT)}break}
+    case "slot":if(p){const s=slotsOf(p)[u.i];s.used=clamp(s.used-u.d,0,s.max)}break;
+    case "iA":if(p){const i=p.items.find(x=>x.id===u.iid);if(i){i.q-=u.q;if(i.q<=0)p.items=p.items.filter(x=>x!==i)}}break;
+    case "iR":if(p){const i=p.items.find(x=>x.id===u.item.id);if(i)i.q+=u.item.q;else p.items.push(u.item)}break;
+    case "gold":if(p)p.gold=(p.gold||0)-u.d;break;
+    case "cA":if(p)p.conds=p.conds.filter(x=>x!==u.cd);break;
+    case "cR":if(p&&!p.conds.includes(u.cd))p.conds.push(u.cd);break;
+    case "surv":if(p&&L.surv[p.id])L.surv[p.id][u.stat]=clamp(L.surv[p.id][u.stat]-u.d,0,5);break;
+    case "rest":u.before.forEach(b=>{const q=ps.find(x=>x.id===b.id);if(q){q.hp=b.hp;q.temp=b.temp;q.conds=b.conds;q.slots=b.slots;if(b.surv)L.surv[q.id]=b.surv}});break;
+    case "npcA":L.npcs=L.npcs.filter(n=>n.id!==u.id);break;
+    case "npcR":{const i=L.npcs.findIndex(n=>n.id===u.old.id);if(i>=0)L.npcs[i]=u.old;break}
+    case "ev":L.timeline=L.timeline.filter(e=>e.id!==u.id);break;
+    case "fight":L.fight=null;break;
+  }
+  f.undone=true;saveLT();dlSave();render();
+}
+function startFight(){
+  const L=DL(),f=L.fight;L.fight=null;L.fightEnd=false;
+  startCombat();
+  const missing=[];
+  for(const m of (f&&f.monsters)||[]){
+    const n=nrm(m.name),ns=n.replace(/s$/,"");
+    const known=allMonsters().find(x=>{const k=nrm(x.name);return k===n||k===ns});
+    if(known)addMonsters(known,m.count,false);
+    else{addMonsters({name:m.name,cr:"?",ac:m.ac||12,hp:m.hp||10,hd:"",dex:0,speed:"",atk:""},m.count,false);if(!m.hp)missing.push(m.name)}
+  }
+  const T=ltOf(S.core.active);T.feed.push({id:uid(),ts:Date.now(),text:"⚔️ Combat started"+((f&&f.monsters&&f.monsters.length)?" with "+f.monsters.map(m=>m.name+(m.count>1?" ×"+m.count:"")).join(", "):""),why:"",undo:{k:"none"}});saveLT();
+  dlSave();render();
+  if(missing.length)toastMsg("Check the HP and AC for: "+missing.join(", "));
+}
+
+/* ---- Microphone and transcript ---- */
+let rec=null,wantListen=false,interim="",nextCheck=0,busy=false,fails=0,micCamp=null;
+function addLine(text,campId){
+  text=String(text||"").trim();if(!text)return;const id=campId||micCamp||S.core.active,T=ltOf(id);
+  T.transcript.push({t:Date.now(),x:text});saveLT();refreshTx();
+  const L=S.camps[id]&&S.camps[id].live;if(L&&!L.sessionStart){L.sessionStart=Date.now();commit("camp_"+id)}
+}
+function startMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toastMsg("Live transcription needs Google Chrome or Microsoft Edge");return}
+  if(!SETL.apiKey)toastMsg("Listening. Add your API key in Live setup to turn on the AI.");
+  micCamp=S.core.active;rec=new SR();rec.lang="en-GB";rec.continuous=true;rec.interimResults=true;
+  rec.onresult=e=>{let im="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)addLine(r[0].transcript,micCamp);else im+=r[0].transcript}interim=im;refreshTx()};
+  rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){wantListen=false;render();toastMsg("Microphone blocked. Allow it from the padlock in the address bar.")}else if(e.error==="network")toastMsg("Speech service unreachable. Check the internet connection.")};
+  rec.onend=()=>{interim="";if(wantListen)setTimeout(()=>{try{rec.start()}catch(err){}},250)};
+  try{rec.start()}catch(err){}
+  wantListen=true;nextCheck=Date.now()+SETL.interval*60000;
+  const L=DL();if(!L.sessionStart){L.sessionStart=Date.now();dlSave()}
+  wake();render();
+}
+function stopMic(){wantListen=false;try{rec&&rec.stop()}catch(e){}render()}
+function downloadTx(){
+  const T=ltOf(S.core.active),meta=activeMeta();if(!T.transcript.length){toastMsg("No transcript yet");return}
+  download(`${meta.name} Session ${DL().sessionNo} transcript.txt`,T.transcript.map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n"));
+}
+addEventListener("beforeunload",e=>{if(wantListen){e.preventDefault();e.returnValue=""}});
+function aiStatus(){
+  if(busy)return `<span class="dl-spin"></span>AI reading…`;
+  if(!SETL.apiKey)return "AI off (no API key)";
+  if(wantListen&&micCamp===S.core.active){const s=Math.max(0,Math.round((nextCheck-Date.now())/1000));return `Next AI check ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+  const T=ltOf(S.core.active),n=T.transcript.length-T.processed;return n?`${n} new line${n>1?"s":""} to check`:"AI idle";
+}
+setInterval(()=>{
+  const st=document.getElementById("dlAiSt");if(st)st.innerHTML=aiStatus();
+  if(!wantListen||busy||!SETL.apiKey||!micCamp)return;
+  if(Date.now()>=nextCheck){const T=ltOf(micCamp),w=T.transcript.slice(T.processed).reduce((a,l)=>a+l.x.split(/\s+/).length,0);
+    if(w>=12&&micCamp===S.core.active)processChunk(false);else nextCheck=Date.now()+SETL.interval*60000}
+},1000);
+
+/* ---- Claude ---- */
+async function askClaude(system,user,maxTokens){
+  if(!SETL.apiKey)throw new Error("Add your Anthropic API key in Live setup first");
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":SETL.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:SETL.model||"claude-sonnet-5-5",max_tokens:maxTokens||3000,system,messages:[{role:"user",content:user}]})});
+  if(!r.ok){let m="HTTP "+r.status;try{const j=await r.json();m=(j.error&&j.error.message)||m}catch(e){}
+    if(r.status===401)m="The API key was rejected. Check it in Live setup.";if(r.status===429)m="Rate limited by the API. Will try again shortly.";throw new Error(m)}
+  const j=await r.json();return (j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+}
+function parseJSON(t){t=String(t||"").replace(/```(?:json)?/gi,"");const a=t.indexOf("{"),b=t.lastIndexOf("}");if(a<0||b<a)throw new Error("The AI reply was not JSON");return JSON.parse(t.slice(a,b+1))}
+function stateText(){
+  const meta=activeMeta(),cp=dmCamp(),L=DL();
+  const pl=cp.players.map(p=>{const sl=slotsOf(p).map((s,i)=>s.max?`L${i+1} ${s.max-s.used}/${s.max}`:"").filter(Boolean).join(", ");
+    return `- ${p.name}: ${[p.race,p.cls,"level "+p.lvl].filter(Boolean).join(" ")}; HP ${p.hp}/${p.max}${p.temp?" +"+p.temp+" temp":""}; AC ${p.ac}; gold ${p.gold||0}${sl?"; slots left "+sl:""}${p.conds.length?"; conditions: "+p.conds.join(", "):""}; items: ${p.items.map(i=>i.n+(i.q>1?" x"+i.q:"")).join(", ")||"none"}`+
+      (L.survival?`; survival ${SURV.map(k=>k+" "+((L.surv[p.id]||{})[k]??5)+"/5").join(" ")}`:"")}).join("\n");
+  const C=cp.combat;
+  const cb=C.active?`COMBAT IS ACTIVE (round ${C.round}). Monsters in the fight:\n`+(C.list.filter(e=>e.kind==="m").map(e=>`- ${e.name}: HP ${e.hp}/${e.max}, AC ${e.ac}`).join("\n")||"(none added yet)"):"No combat running in the tracker.";
+  const np=L.npcs.map(n=>`- ${n.name}: ${[n.role,n.location,n.attitude,n.status!=="alive"?n.status:""].filter(Boolean).join(", ")}`).join("\n");
+  const tl=L.timeline.filter(e=>e.session===L.sessionNo).slice(-10).map(e=>`- [${e.type}] ${e.title}`).join("\n");
+  return `CAMPAIGN: ${meta.name}, session ${L.sessionNo}\n\nPLAYER CHARACTERS:\n${pl||"(none)"}\n\n${cb}\n\nKNOWN NPCS:\n${np||"(none)"}\n\nTIMELINE EVENTS ALREADY LOGGED THIS SESSION:\n${tl||"(none)"}`;
+}
+const SYS_LIVE=`You are the live note-taker for a Dungeons & Dragons 5e Dungeon Master. You get the game state and a new chunk of an automatic speech-to-text transcript of the table. It has no speaker labels and contains mishearings of fantasy names, crosstalk and out-of-character chat. Lines starting [DM note] were typed by the DM and are reliable.
+
+Work out what CHANGED in the game during the NEW chunk only, and return JSON. Be conservative: record only things that clearly happened. Ignore rules talk, jokes, hypotheticals ("if I attack…") and anything already in the state or timeline. Match names to the listed characters, monsters and NPCs even if misspelt. Never invent numbers: if damage is described without a number, don't change HP.
+
+Return ONLY a JSON object: {"changes":[...],"events":[...]}
+
+Changes (use exact names from the state as "target"):
+{"type":"hp","target":"Hero","amount":-7,"reason":"short why"}   negative = damage, positive = healing
+{"type":"set_hp","target":"Hero","value":14,"reason":"..."}       when current HP is stated
+{"type":"temp_hp","target":"Hero","value":5,"reason":"..."}
+{"type":"spell_slot","target":"Hero","level":2,"amount":1,"spell":"Misty Step","reason":"..."}   1 = used, -1 = regained
+{"type":"item_add","target":"Hero","item":"Silver key","qty":1,"kind":"item|weapon","reason":"..."}
+{"type":"item_remove","target":"Hero","item":"Healing potion","qty":1,"reason":"..."}
+{"type":"gold","target":"Hero","amount":25,"reason":"..."}   negative = spent
+{"type":"condition_add","target":"Hero","condition":"Poisoned","reason":"..."}
+{"type":"condition_remove","target":"Hero","condition":"Poisoned","reason":"..."}
+{"type":"rest","kind":"short|long","reason":"..."}
+{"type":"npc_add","name":"NPC","role":"who they are","location":"where","attitude":"friendly|neutral|hostile","background":"what was learned","items":["..."],"notes":"..."}
+{"type":"npc_update","name":"NPC","field":"notes|background|attitude|status|location|role|items_add|items_remove","value":"..."}   status alive|dead|missing
+{"type":"combat_start","monsters":[{"name":"Goblin","count":3,"ac":15,"hp":7}],"reason":"..."}   ONLY when no combat is active and initiative is rolled or a fight clearly begins. Use singular 5e monster names; include ac and hp from the 5e stat block if you know them.
+{"type":"monster_hp","target":"Goblin B","amount":-6,"reason":"..."}   ONLY while combat is active, using a monster name from the list
+{"type":"combat_end","reason":"..."}   when combat is active and the fight clearly ends
+SURVIVAL_LINE
+
+Events for the visual timeline (only meaningful moments, usually 0-4 per chunk):
+{"type":"plot|combat|npc|loot|location|quest|rest|death","title":"max 6 words","detail":"1-3 sentences","who":["names"],"monsters":[{"name":"Goblin","count":3,"outcome":"defeated|fled|ongoing|spared"}]}
+Log a "combat" event when a fight ends (or something notable happens in it), listing the monsters fought.
+
+If nothing changed, return {"changes":[],"events":[]}.`;
+async function processChunk(force){
+  if(busy)return;
+  const id=S.core.active,T=ltOf(id),end=T.transcript.length,lines=T.transcript.slice(T.processed,end);
+  if(!lines.length){if(force)toastMsg("Nothing new to check");nextCheck=Date.now()+SETL.interval*60000;return}
+  if(!SETL.apiKey){if(force)toastMsg("Add your Anthropic API key in Live setup to turn on the AI");return}
+  busy=true;const st=document.getElementById("dlAiSt");if(st)st.innerHTML=aiStatus();
+  const ctx=T.transcript.slice(Math.max(0,T.processed-8),T.processed).map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n");
+  const user=`${stateText()}\n\nEARLIER TRANSCRIPT (already processed, context only, do NOT re-apply):\n${ctx||"(start of session)"}\n\nNEW TRANSCRIPT CHUNK (process this):\n${lines.map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n")}`;
+  const sys=SYS_LIVE.replace("SURVIVAL_LINE",DL().survival?`{"type":"survival","target":"Hero","stat":"food|water|warmth|sleep","amount":-1,"reason":"..."}   scale 0-5, 5 = fine`:"");
+  try{
+    const out=parseJSON(await askClaude(sys,user,3000));
+    if(S.core.active!==id)throw new Error("Campaign changed while the AI was reading");
+    const list=[];
+    for(const c of (out.changes||[])){try{list.push(applyChange(c))}catch(err){console.warn(err)}}
+    for(const ev of (out.events||[]))list.push(addEvent(ev));
+    T.processed=Math.max(T.processed,end);fails=0;
+    pushFeed(list);dlSave();remoteTick=true;render();
+    if(force&&!list.filter(Boolean).length)toastMsg("Checked: no changes found");
+  }catch(err){fails++;toastMsg("AI check failed: "+err.message)}
+  finally{busy=false;nextCheck=Date.now()+SETL.interval*60000*Math.min(4,2**fails);const s2=document.getElementById("dlAiSt");if(s2)s2.innerHTML=aiStatus()}
+}
+async function endSession(btn){
+  const id=S.core.active,T=ltOf(id),L=DL(),meta=activeMeta();
+  if(!T.transcript.length&&!L.timeline.some(e=>e.session===L.sessionNo)){toastMsg("Nothing has happened this session yet");return}
+  if(btn.dataset.armed!=="1"){btn.dataset.armed="1";btn.textContent="Tap again to end";setTimeout(()=>{if(btn.isConnected){btn.dataset.armed="";btn.textContent="End session"}},3500);return}
+  if(wantListen&&micCamp===id){wantListen=false;try{rec&&rec.stop()}catch(e){}}
+  btn.disabled=true;btn.innerHTML=`<span class="dl-spin"></span>Wrapping up…`;
+  let sum=null;
+  try{
+    if(SETL.apiKey){
+      if(T.processed<T.transcript.length)await processChunk(false);
+      const evs=L.timeline.filter(e=>e.session===L.sessionNo).map(e=>`- [${e.type}] ${e.title}: ${e.detail}${e.monsters&&e.monsters.length?" (monsters: "+e.monsters.map(m=>m.name+" x"+m.count).join(", ")+")":""}`).join("\n");
+      let tx=T.transcript.map(l=>l.x).join("\n");if(tx.length>300000)tx=tx.slice(0,120000)+"\n…\n"+tx.slice(-180000);
+      const prev=L.journey.filter(j=>j.session<L.sessionNo).slice(-2).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
+      const out=parseJSON(await askClaude('You write session recaps for a Dungeons & Dragons Dungeon Master in UK English. Use the events list and the error-prone, unlabelled speech-to-text transcript. Past tense, story style but factual, naming characters, NPCs, places, monsters fought and key loot. Return ONLY JSON: {"title":"evocative 3-6 word title","summary":"3-6 short paragraphs"}',
+        `${stateText()}\n\nPREVIOUS SESSIONS:\n${prev||"(none)"}\n\nEVENTS THIS SESSION:\n${evs||"(none logged)"}\n\nTRANSCRIPT:\n${tx||"(none)"}`,2500));
+      sum={title:out.title||"Session "+L.sessionNo,summary:out.summary||""};
+    }
+  }catch(err){toastMsg("Couldn't write the summary automatically: "+err.message)}
+  if(!sum){const evs=L.timeline.filter(e=>e.session===L.sessionNo);sum={title:"Session "+L.sessionNo,summary:evs.map(e=>"• "+e.title+(e.detail?": "+e.detail:"")).join("\n")||"No summary written."}}
+  L.journey=L.journey.filter(x=>x.session!==L.sessionNo);L.journey.push({id:uid(),session:L.sessionNo,date:L.sessionStart||Date.now(),...sum});
+  if(T.transcript.length)download(`${meta.name} Session ${L.sessionNo} transcript.txt`,T.transcript.map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n"));
+  L.sessionNo++;L.sessionStart=null;L.fight=null;L.fightEnd=false;T.transcript=[];T.processed=0;T.feed=[];interim="";
+  saveLT();dlSave();S.core.dmTab="journey";commit("core");render();
+  toastMsg("Session saved. Edit the summary if anything is off.");
+}
+async function writeStory(){
+  const L=DL();if(!L.journey.length){toastMsg("End at least one session first");return}
+  const b=document.getElementById("dlStoryBtn");if(b){b.disabled=true;b.innerHTML=`<span class="dl-spin"></span>Writing…`}
+  try{const all=L.journey.slice().sort((a,c)=>a.session-c.session).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
+    L.story=(await askClaude('You write a "story so far" recap for a Dungeons & Dragons campaign in UK English, to be read aloud at the start of the next session. 2-4 paragraphs, vivid but accurate, past tense, ending on where the party is now and what lies ahead. Plain text only.',
+      `Campaign: ${activeMeta().name}\nParty: ${dmCamp().players.map(p=>p.name+" ("+[p.race,p.cls].filter(Boolean).join(" ")+")").join(", ")}\n\n${all}`,1500)).trim();
+    dlSave();render();
+  }catch(err){toastMsg(err.message);if(b){b.disabled=false;b.textContent='✨ Write "story so far"'}}
+}
+function addDemo(){
+  const L=DL(),t0=Date.now()-7*864e5,ev=(s,m,type,title,detail,who,mon)=>({id:uid(),session:s,ts:t0+(s-1)*7*864e5+m*6e4,type,title,detail,who:who||[],monsters:mon||[]});
+  L.npcs.push({id:uid(),name:"Mother Grell",role:"Herbalist",location:"Ashford village",attitude:"friendly",status:"alive",background:"Has lived on the edge of the marsh for 40 years. Lost her son to the bog wights.",items:["Antitoxin","Marsh map"],notes:"Knows the safe path through the marsh. Secretly owes money to Captain Voss.",firstSeen:1},
+    {id:uid(),name:"Captain Voss",role:"Mercenary captain",location:"The Rusted Anchor",attitude:"hostile",status:"alive",background:"Scarred ex-soldier running protection rackets on the river.",items:["Longsword","Ledger of debts"],notes:"The party embarrassed him in session 1.",firstSeen:1});
+  L.timeline.push(ev(1,5,"location","Arrived in Ashford","The party arrived in the marsh village of Ashford during a storm."),ev(1,30,"npc","Met Mother Grell","The herbalist offered shelter and told them about the bog wights.",["Mother Grell"]),
+    ev(1,70,"combat","Ambush at the bridge","Goblins ambushed the party on the rope bridge.",[],[{name:"Goblin",count:4,outcome:"defeated"},{name:"Wolf",count:1,outcome:"fled"}]),
+    ev(1,95,"loot","Silver key found","A silver key engraved with a heron, taken from the goblin boss."),ev(1,140,"npc","Clash with Captain Voss","Voss tried to charge a river toll and was laughed out of the inn.",["Captain Voss"]),
+    ev(2,10,"quest","Find the drowned chapel","Mother Grell asked them to find the chapel where her son vanished.",["Mother Grell"]));
+  if(!L.journey.some(j=>j.session===1))L.journey.push({id:uid(),session:1,date:t0,title:"Storm over Ashford",summary:"The heroes reached Ashford in a storm and were sheltered by Mother Grell, who told them of the bog wights. On the rope bridge they beat off a goblin ambush and claimed a heron-engraved silver key. That night at the Rusted Anchor they humiliated the mercenary Captain Voss, making a dangerous enemy."});
+  if(L.sessionNo<2)L.sessionNo=2;
+  L.timeline.sort((a,c)=>a.session-c.session||a.ts-c.ts);dlSave();render();toastMsg("Example story added. Delete it any time.");
+}
+
+/* ---- Clicks, notes and settings ---- */
+function dlClick(act,b){
+  switch(act){
+    case "dlOpen":{const id=b.dataset.camp;if(S.core.active!==id){if(wantListen&&micCamp!==id)stopMic();S.core.active=id;stopHost();startHost()}S.core.dmOpen=id;commit("core");render();window.scrollTo(0,0);return true}
+    case "dlHome":S.core.dmOpen=null;commit("core");hideTip();render();window.scrollTo(0,0);return true;
+    case "dlTab":S.core.dmTab=b.dataset.k;commit("core");hideTip();render();return true;
+    case "dlMic":wantListen?stopMic():startMic();return true;
+    case "dlCheck":processChunk(true);return true;
+    case "dlTx":downloadTx();return true;
+    case "dlEnd":endSession(b);return true;
+    case "dlUndo":undo(b.dataset.fid);return true;
+    case "dlFight":startFight();return true;
+    case "dlFightNo":DL().fight=null;dlSave();render();return true;
+    case "dlFightEnd":DL().fightEnd=false;endCombat();return true;
+    case "dlFightEndNo":DL().fightEnd=false;dlSave();render();return true;
+    case "dlNpc":npcSheet(b.dataset.nid);return true;
+    case "dlEv":hideTip();evSheet(b.dataset.eid2);return true;
+    case "dlEvTap":if(matchMedia("(hover: hover)").matches){hideTip();evSheet(b.dataset.eid)}else showTip(b,true);return true;
+    case "dlTipX":hideTip();return true;
+    case "dlFilt":{const k=b.dataset.k;tlFilter.has(k)?tlFilter.delete(k):tlFilter.add(k);render();return true}
+    case "dlJ":jSheet(b.dataset.jid2);return true;
+    case "dlStory":writeStory();return true;
+    case "dlSurv":{const p=dmCamp().players.find(x=>x.id===b.dataset.id),L=DL();if(!p)return true;const s=L.surv[p.id]=Object.assign({food:5,water:5,warmth:5,sleep:5},L.surv[p.id]);s[b.dataset.k]=+b.dataset.v;dlSave();render();return true}
+    case "dlTest":{const o=document.getElementById("dlTestOut");o.innerHTML=`<span class="dl-spin"></span>Testing…`;
+      askClaude("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
+    case "dlExport":{const L=DL(),meta=activeMeta();download(`${meta.name} DM Live notes ${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({tkLive:1,campaign:meta.code,live:L},null,1),"application/json");return true}
+    case "dlImport":{const f=document.getElementById("dlImportF");f.onchange=async()=>{const file=f.files[0];if(!file)return;
+      try{const d=JSON.parse(await file.text()),src=d.live||d.state;if(!src||!Array.isArray(src.timeline))throw new Error("Not a DM Live notes file");
+        const L=DL();Object.assign(L,{npcs:src.npcs||[],timeline:src.timeline||[],journey:src.journey||[],story:src.story||"",sessionNo:src.sessionNo||L.sessionNo,survival:!!src.survival,surv:src.surv||L.surv});
+        dlSave();render();toastMsg("Notes imported")}catch(e){toastMsg("Import failed: "+e.message)}};f.click();return true}
+    case "dlDemo":addDemo();return true;
+    case "dlClear":if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to clear";setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="Clear DM Live notes"}},3500);return true}
+      {const L=DL();Object.assign(L,{npcs:[],timeline:[],journey:[],story:"",sessionNo:1,sessionStart:null,surv:{},fight:null,fightEnd:false});const T=ltOf(S.core.active);T.transcript=[];T.processed=0;T.feed=[];saveLT();dlSave();render();toastMsg("DM Live notes cleared")}return true;
+  }
+  return false;
+}
+document.addEventListener("click",e=>{if(tip.classList.contains("sticky")&&!e.target.closest(".dl-tip,.dl-ev"))hideTip()},true);
+
 /* ---------- Events ---------- */
 const MODES=["dm","player","camps"];
 function setMode(m){
@@ -1846,6 +2581,7 @@ document.getElementById("switch").addEventListener("click",e=>{const b=e.target.
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const act=b.dataset.act,id=b.dataset.id||(b.closest("[data-id]")&&b.closest("[data-id]").dataset.id);
+  if(act.startsWith("dl")&&dlClick(act,b))return;
   const p=id?findP(id):null;
   switch(act){
     case "dmg1":damage(p,1);commit(keyFor(id));render();break;
@@ -1897,6 +2633,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("submit",async e=>{
+  const nf=e.target.closest('[data-form="dlNote"]');if(nf){e.preventDefault();const i=nf.querySelector("input"),v=i.value.trim();if(v){addLine("[DM note] "+v,S.core.active);i.value=""}return}
   const jf=e.target.closest('[data-form="join"]');if(jf){e.preventDefault();joinCode(jf.querySelector("input").value);return}
   const lf=e.target.closest('[data-form="unlock"],[data-form="setpw"]');
   if(lf){e.preventDefault();
@@ -1922,6 +2659,7 @@ document.addEventListener("submit",async e=>{
   else{render();const x=document.getElementById("me-newitem");x&&x.focus()}
 });
 document.addEventListener("change",e=>{
+  if(e.target.dataset&&e.target.dataset.dlset){setChange(e.target);return}
   if(e.target.id==="campSel"){
     const v=e.target.value;
     if(v==="__new"||v==="__open"){e.target.value=S.core.active;v==="__new"?newCampSheet():openCampSheet();return}
@@ -1933,6 +2671,7 @@ document.addEventListener("change",e=>{
 let nt;
 document.addEventListener("focusout",()=>{if(renderHeld)setTimeout(()=>{if(renderHeld)render()},50)});
 document.addEventListener("input",e=>{
+  if(e.target.dataset&&e.target.dataset.dlq){const L=DL();if(e.target.dataset.dlq==="npc"){npcQ=e.target.value;const x=document.getElementById("dlNpcList");if(x)x.innerHTML=npcListHTML(L)}else{tlQ=e.target.value;const x=document.getElementById("dlTl");if(x)x.innerHTML=trackHTML(L)}return}
   if(e.target.dataset.notes){const p=findP(e.target.dataset.notes);if(!p)return;p.notes=e.target.value;clearTimeout(nt);nt=setTimeout(()=>commit(keyFor(p.id)),500)}
 });
 
