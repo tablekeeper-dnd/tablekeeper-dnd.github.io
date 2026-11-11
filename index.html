@@ -337,7 +337,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--faint);margin-right:6px;vertical-align:1px}
 .dl-dot.on{background:var(--blood);animation:dlp 1.2s infinite}
 @keyframes dlp{50%{opacity:.3}}
-.dl-prow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.dl-prow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .dl-prow .btn{padding:8px 6px;font-size:.82rem;min-height:38px}
 .dl-h{display:flex;justify-content:space-between;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .dl-h span:last-child{font-weight:600;letter-spacing:0;text-transform:none;color:var(--faint)}
@@ -2061,7 +2061,7 @@ function panelHTML(){
     <button class="btn dl-mic${wantListen&&here?" on":""}" data-act="dlMic"${!here?" disabled":""}>${!here?"🎙️ Listening in another campaign":wantListen?"⏸ Stop listening":"🎙️ Start listening"}</button>
     <div class="dl-status"><span id="dlMicSt"><i class="dl-dot${wantListen&&here?" on":""}"></i>${wantListen&&here?"Listening":"Mic off"}</span><span id="dlAiSt">${aiStatus()}</span></div>
     <label class="dl-check dl-recap${DL().recap?" on":""}"><input type="checkbox" data-dlset="recap"${DL().recap?" checked":""}><span><b>Recap mode</b>: catching up on earlier sessions. Logs events, NPCs and items only, never HP, spell slots or combat.</span></label>
-    <div class="dl-prow"><button class="btn" data-act="dlCheck">⚡ Check now</button><button class="btn" data-act="dlTx">⬇ Transcript</button><button class="btn gold" data-act="dlEnd">End session</button></div>
+    <div class="dl-prow"><button class="btn" data-act="dlCheck">⚡ Check now</button><button class="btn" data-act="dlTx">⬇ Transcript</button><button class="btn" data-act="dlTxLoad" title="Load a saved transcript .txt back in">⬆ Load</button><input type="file" id="dlTxFile" accept=".txt,text/plain" hidden><button class="btn gold" data-act="dlEnd">End session</button></div>
     <div class="dl-h"><span>Live transcript</span><span id="dlWords"></span></div>
     <div class="dl-tx" id="dlTxBox">${txHTML(T)}</div>
     <form class="dl-note" data-form="dlNote"><input id="dlNoteIn" type="text" placeholder="Type a note, e.g. Brakka takes 9" aria-label="Add a note to the transcript"><button class="btn">Add</button></form>
@@ -2555,7 +2555,7 @@ async function processChunk(force){
 async function endSession(btn){
   const id=S.core.active,T=ltOf(id),L=DL(),meta=activeMeta();
   if(!T.transcript.length&&!L.timeline.some(e=>e.session===L.sessionNo)){toastMsg("Nothing has happened this session yet");return}
-  if(btn.dataset.armed!=="1"){btn.dataset.armed="1";btn.textContent="Tap again to end";setTimeout(()=>{if(btn.isConnected){btn.dataset.armed="";btn.textContent="End session"}},3500);return}
+  if(btn.dataset.armed!=="1"){btn.dataset.armed="1";btn.textContent=aiReady()?"Tap again to end":"AI not ready: no summary. Tap to end anyway";if(!aiReady())toastMsg(aiMissing()+" first if you want the AI to write the summary.");setTimeout(()=>{if(btn.isConnected){btn.dataset.armed="";btn.textContent="End session"}},5000);return}
   if(wantListen&&micCamp===id){wantListen=false;try{rec&&rec.stop()}catch(e){}}
   btn.disabled=true;btn.innerHTML=`<span class="dl-spin"></span>Wrapping up…`;
   let sum=null;
@@ -2627,6 +2627,13 @@ function dlClick(act,b){
       if(!aiReady()){o.textContent="❌ "+aiMissing();return true}
       askAI("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
     case "dlNanoSetup":setupNano(false);return true;
+    case "dlTxLoad":{const f=document.getElementById("dlTxFile");f.value="";f.onchange=async()=>{const file=f.files[0];if(!file)return;
+      const txt=await file.text(),id=S.core.active,T=ltOf(id),now=Date.now();
+      const lines=txt.split(/\r?\n/).map(l=>l.replace(/^\[\d{1,2}:\d{2}\]\s*/,"").trim()).filter(Boolean);
+      if(!lines.length){toastMsg("That file has no transcript lines");return}
+      lines.forEach((x,i)=>T.transcript.push({t:now-(lines.length-i)*1000,x}));saveLT();
+      const L=DL();if(!L.sessionStart){L.sessionStart=now;dlSave()}
+      render();toastMsg(`Loaded ${lines.length} lines.`+(aiReady()?" Press Check now to let the AI read them.":" "+aiMissing()+", then press Check now."))};f.click();return true}
     case "dlExport":{const L=DL(),meta=activeMeta();download(`${meta.name} DM Live notes ${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({tkLive:1,campaign:meta.code,live:L},null,1),"application/json");return true}
     case "dlImport":{const f=document.getElementById("dlImportF");f.onchange=async()=>{const file=f.files[0];if(!file)return;
       try{const d=JSON.parse(await file.text()),src=d.live||d.state;if(!src||!Array.isArray(src.timeline))throw new Error("Not a DM Live notes file");
