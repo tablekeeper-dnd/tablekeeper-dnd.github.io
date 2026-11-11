@@ -2571,6 +2571,16 @@ const kick=(X,t,v=.45,f=110)=>tone(X,X.mus,{f,f2:40,glide:.25,t,a:.003,d:.35,v,w
 const hand=(X,t,v=.2)=>{tone(X,X.mus,{f:210,f2:120,glide:.12,t,a:.002,d:.15,v,wet:.1});nburst(X,X.mus,{t,d:.04,v:v*.35,f:2500,wet:.05})};
 const stab=(X,ms,t,v=.035)=>ms.forEach(m=>tone(X,X.mus,{type:"sawtooth",f:mf(m),t,a:.04,d:1.1,v,lp:1200,wet:.35}));
 /* ambience */
+function syl(X,t,f0,d,v){
+  const o=AC.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f0*(.85+Math.random()*.3),t+d);
+  const g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1800;lp.connect(g);
+  [[300+Math.random()*500,6],[900+Math.random()*1300,8]].forEach(([f,q])=>{const b=AC.createBiquadFilter();b.type="bandpass";b.frequency.value=f;b.Q.value=q;o.connect(b);b.connect(lp)});
+  outTo(X,X.amb,g,.35);o.start(t);o.stop(t+d+.05);
+}
+const chatter=(X,t,v=.05)=>{const f0=Math.random()<.5?100+Math.random()*40:180+Math.random()*60,n=3+Math.floor(Math.random()*7);let tt=t;
+  for(let i=0;i<n;i++){const d=.08+Math.random()*.16;syl(X,tt,f0*(.9+Math.random()*.25),d,v*(.6+Math.random()*.4));tt+=d+.02+Math.random()*.08}};
+const laugh=(X,t)=>{const f0=170+Math.random()*90;for(let i=0;i<4+Math.floor(Math.random()*3);i++)syl(X,t+i*.17,f0*(1.1-i*.03),.11,.05)};
 const murmur=(X,v)=>[300,650,1100,1800].forEach(f=>bed(X,{type:"bandpass",f,q:2.5,v,lfo:[.3+Math.random()*1.4,v*.8]}));
 const clink=(X,t)=>{const f=2200+Math.random()*1800;[1,1.48,2.1].forEach((r,i)=>tone(X,X.amb,{f:f*r,t,a:.002,d:.25-i*.05,v:.022,wet:.2}))};
 const crackle=(X,t)=>nburst(X,X.amb,{t,d:.004+Math.random()*.012,v:.04+Math.random()*.1,type:"highpass",f:1500+Math.random()*2000,q:.5,wet:.02});
@@ -2592,14 +2602,14 @@ const gust=(X,t)=>nburst(X,X.amb,{t,d:3+Math.random()*3,v:.1,type:"bandpass",f:5
 const wail=(X,t)=>tone(X,X.amb,{type:"sawtooth",f:300+Math.random()*200,f2:180,glide:2,t,a:.6,d:2,v:.012,lp:900,vib:[5,10],wet:.8});
 const SCENES=[
   {id:"tavern",lvl:2.4,icon:"🍺",name:"Tavern",desc:"Chatter, clinking tankards, a crackling hearth and a lively lute jig.",start(X){
-    murmur(X,.035);bed(X,{brown:true,f:250,v:.05});const w=walker(DOR,62,11);
-    run(X,.22,(s,t)=>{const b=s%12;if(s%6===0){kick(X,t,.18,95);pluck(X,b<6?50:45,t,.09,1.1)}if(s%6===3)hand(X,t,.12);if(Math.random()<.85)pluck(X,w(),t,.08,.45)},[[.5,clink],[5,crackle]])}},
+    const w=walker(DOR,62,11);
+    run(X,.22,(s,t)=>{const b=s%12;if(s%6===0){kick(X,t,.18,95);pluck(X,b<6?50:45,t,.09,1.1)}if(s%6===3)hand(X,t,.12);if(Math.random()<.85)pluck(X,w(),t,.08,.45)},[[4,(X,t)=>chatter(X,t,.045)],[.12,laugh],[.5,clink],[4,crackle]])}},
   {id:"meadow",lvl:1.5,icon:"🌾",name:"Open fields",desc:"Wind over the grass, birdsong and a gentle shepherd's flute.",start(X){
     bed(X,{brown:true,f:600,v:.12,flfo:[.07,250]});const w=walker(PENT,67,9);
     run(X,.6,(s,t)=>{if(s%8===0)[55,62,67].forEach((m,i)=>harp(X,m,t+i*.15,.06));if(Math.random()<.55)flute(X,w(),t,.5+Math.random()*.7)},[[.35,bird]])}},
-  {id:"town",lvl:2,icon:"🏘️",name:"Busy town",desc:"Market crowds, hooves on cobbles, a blacksmith's anvil and a distant bell.",start(X){
-    murmur(X,.05);bed(X,{brown:true,f:400,v:.04});const w=walker(MIX,67,11);
-    run(X,.3,(s,t)=>{if(s%8===0)pluck(X,s%16?50:55,t,.08,1.2);if(Math.random()<.6)pluck(X,w(),t,.06,.5);if(s%32>=24&&Math.random()<.5)flute(X,w()+12,t,.3,.04)},[[.06,hooves],[.06,anvil],[.02,(t)=>bell(X,t,330,.03)],[.15,clink]])}},
+  {id:"town",lvl:2.6,icon:"🏘️",name:"Busy town",desc:"Market crowds, hooves on cobbles, a blacksmith's anvil and a distant bell.",start(X){
+    const w=walker(MIX,67,11);
+    run(X,.3,(s,t)=>{if(s%8===0)pluck(X,s%16?50:55,t,.08,1.2);if(Math.random()<.6)pluck(X,w(),t,.06,.5);if(s%32>=24&&Math.random()<.5)flute(X,w()+12,t,.3,.04)},[[5,(X,t)=>chatter(X,t,.04)],[.05,laugh],[.06,hooves],[.06,anvil],[.02,(t)=>bell(X,t,330,.03)],[.15,clink]])}},
   {id:"battle",lvl:1.1,icon:"⚔️",name:"Battle",desc:"War drums, clashing steel, distant war cries and brass.",start(X){
     bed(X,{type:"bandpass",f:600,q:1,v:.05,lfo:[.15,.035]});drone(X,[38,45],{type:"sawtooth",v:.02,lp:300});
     run(X,.21,(s,t)=>{const b=s%8;if([0,3,4,6].includes(b))kick(X,t,.5,b===0?100:85);else hand(X,t,.08);if(s%16===0)stab(X,s%32?[50,57,62]:[48,55,60],t);if(s%64===56)stab(X,[52,59,64],t,.03)},[[1.1,clash],[.5,shout]])}},
