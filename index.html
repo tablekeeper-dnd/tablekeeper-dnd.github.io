@@ -420,6 +420,25 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-genprev{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--faint)}
 .dl-chipbtn{font-size:.78rem;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .dl-chipbtn:hover{border-color:var(--brass);color:var(--ink)}
+.dl-mus-ctl{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px}
+.dl-mus-now{flex:1 1 180px;font-size:.95rem}
+.dl-mus-now b{color:var(--brass)}
+.dl-range{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+.dl-range input{width:130px;accent-color:var(--brass)}
+.dl-mus{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:10px;margin-top:12px}
+.dl-musbox{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;transition:border-color .15s,transform .15s}
+.dl-musbox:hover{border-color:var(--brass);transform:translateY(-2px)}
+.dl-musbox.on{border-color:var(--brass);background:color-mix(in srgb,var(--brass) 12%,var(--surface))}
+.dl-music{font-size:1.8rem;line-height:1}
+.dl-mustx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dl-mustx b{font-family:var(--f-display);font-weight:400;font-size:1.2rem}
+.dl-mustx small{color:var(--muted);font-size:.8rem;line-height:1.35}
+.dl-musst{color:var(--brass);font-size:1rem;width:22px;text-align:center}
+.dl-eq{display:inline-flex;align-items:flex-end;gap:2px;height:14px;margin-right:6px;vertical-align:-2px}
+.dl-eq i{width:3px;background:var(--brass);animation:dleq .9s ease-in-out infinite}
+.dl-eq i:nth-child(2){animation-delay:.3s}.dl-eq i:nth-child(3){animation-delay:.6s}
+@keyframes dleq{0%,100%{height:4px}50%{height:14px}}
+.dl-nowplay{flex:0 0 auto;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid var(--brass);color:var(--brass);white-space:nowrap}
 .dl-ev-mini b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dl-tip{position:fixed;z-index:60;max-width:320px;background:#0f0c0a;border:1px solid var(--brass);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px #000c;font-size:.88rem;pointer-events:none}
 .dl-tip.sticky{pointer-events:auto}
@@ -2057,16 +2076,17 @@ function dmLiveView(){
   let h=`<div class="bar dl-bar"><button class="btn" data-act="dlHome">← Campaigns</button><h2 class="dl-title">${esc(meta.name)}</h2>
     <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
     <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
-  h+=`<nav class="dl-tabs">${[["party","Party"+(cp.combat.active?" ⚔️":"")],["npcs","NPCs"],["timeline","Timeline"],["journey","Journey"],["items","🎲 Items"],["setup","Live setup"]].map(([k,l])=>`<button class="${tk===k?"on":""}" data-act="dlTab" data-k="${k}">${l}</button>`).join("")}</nav>`;
+  h+=`<nav class="dl-tabs">${[["party","Party"+(cp.combat.active?" ⚔️":"")],["npcs","NPCs"],["timeline","Timeline"],["journey","Journey"],["items","🎲 Items"],["music","🎵 Music"],["setup","Live setup"]].map(([k,l])=>`<button class="${tk===k?"on":""}" data-act="dlTab" data-k="${k}">${l}</button>`).join("")}</nav>`;
   if(L.fight&&!cp.combat.active)h+=`<div class="dl-fight"><span>⚔️ <b>Fight detected</b>${L.fight.monsters&&L.fight.monsters.length?": "+esc(L.fight.monsters.map(m=>m.name+(m.count>1?" ×"+m.count:"")).join(", ")):""}</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFight">Start combat</button><button class="btn ghost" data-act="dlFightNo">Dismiss</button></span></div>`;
   if(L.fightEnd&&cp.combat.active)h+=`<div class="dl-fight"><span>🏳️ Sounds like the fight is over.</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFightEnd">End combat</button><button class="btn ghost" data-act="dlFightEndNo">Not yet</button></span></div>`;
-  h+=`<div class="dl-strip"><span class="dl-strip-l">Latest</span><div class="dl-strip-t" id="dlStrip">${stripHTML(L)}</div></div>`;
+  h+=`<div class="dl-strip"><span class="dl-strip-l">Latest</span><div class="dl-strip-t" id="dlStrip">${stripHTML(L)}</div>${curMus?`<button class="dl-nowplay" data-act="dlMusStop" title="Stop the music"><span class="dl-eq"><i></i><i></i><i></i></span>${esc(curMus.name)} ⏹</button>`:""}</div>`;
   let body="";
   if(tk==="npcs")body=npcsHTML(L);
   else if(tk==="timeline")body=timelineHTML(L);
   else if(tk==="journey")body=journeyHTML(L);
   else if(tk==="setup")body=setupHTML(L);
   else if(tk==="items")body=genHTML();
+  else if(tk==="music")body=musicHTML();
   else{
     const ps=cp.players;
     if(cp.combat.active)body+=combatSection();
@@ -2484,6 +2504,160 @@ function genGive(k){
   pushFeed([e]);dlSave();render();toastMsg(`${x.name} given to ${p.name}`);
 }
 
+/* ---- 🎵 Music: fantasy ambience and music generated live with the Web Audio API ----
+   Nothing is downloaded: every sound is made in the browser, so it is free, works offline and never repeats exactly. */
+const MUS=Object.assign({vol:.6,mix:.5},lsGet("tablekeeper.music")||{});
+let AC=null,MASTER=null,VERB=null,WHITE=null,BROWN=null,curMus=null;
+function audio(){
+  if(!AC){
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(AC.destination);
+    MASTER=AC.createGain();MASTER.gain.value=MUS.vol;MASTER.connect(comp);
+    VERB=AC.createConvolver();VERB.buffer=impulse(3.2);const vg=AC.createGain();vg.gain.value=.45;VERB.connect(vg);vg.connect(MASTER);
+    WHITE=nbuf(false);BROWN=nbuf(true);
+  }
+  if(AC.state==="suspended")AC.resume();
+  return AC;
+}
+function nbuf(brown){const len=AC.sampleRate*4,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;if(brown){last=(last+.02*w)/1.02;d[i]=last*3.5}else d[i]=w}return b}
+function impulse(sec){const len=AC.sampleRate*sec,b=AC.createBuffer(2,len,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}return b}
+function mkScene(lvl=1){
+  const t=AC.currentTime,out=AC.createGain();out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(lvl,t+1.5);out.connect(MASTER);
+  const send=AC.createGain();send.gain.setValueAtTime(0,t);send.gain.linearRampToValueAtTime(1,t+1.5);send.connect(VERB);
+  const mus=AC.createGain(),amb=AC.createGain();mus.connect(out);amb.connect(out);
+  const X={out,send,mus,amb,nodes:[],timers:[]};mixOf(X);return X;
+}
+function mixOf(X){X.mus.gain.value=Math.min(1,MUS.mix*2);X.amb.gain.value=Math.min(1,(1-MUS.mix)*2)}
+function outTo(X,bus,node,wet){node.connect(bus);if(wet){const g=AC.createGain();g.gain.value=wet;node.connect(g);g.connect(X.send)}}
+function tone(X,bus,o){
+  const {type="sine",f,t,a=.01,d=.5,v=.2,f2,glide,lp,wet=.2,vib}=o;
+  const osc=AC.createOscillator();osc.type=type;osc.frequency.setValueAtTime(f,t);if(f2)osc.frequency.exponentialRampToValueAtTime(f2,t+(glide||d));
+  if(vib){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=vib[0];lg.gain.value=vib[1];l.connect(lg);lg.connect(osc.frequency);l.start(t);l.stop(t+a+d+.1)}
+  const g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d);
+  let n=osc;if(lp){const fl=AC.createBiquadFilter();fl.type="lowpass";fl.frequency.value=lp;osc.connect(fl);n=fl}
+  n.connect(g);outTo(X,bus,g,wet);osc.start(t);osc.stop(t+a+d+.05);
+}
+function nburst(X,bus,o){
+  const {t,d=.1,v=.2,type="bandpass",f=1000,q=1,brown=false,a=.002,wet=.1,f2}=o;
+  const s=AC.createBufferSource();s.buffer=brown?BROWN:WHITE;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+a+d);fl.Q.value=q;
+  const g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d);
+  s.connect(fl);fl.connect(g);outTo(X,bus,g,wet);s.start(t,Math.random()*3);s.stop(t+a+d+.05);
+}
+function bed(X,o){
+  const {brown=false,type="lowpass",f=500,q=.7,v=.2,lfo,flfo,wet=0,bus}=o;
+  const s=AC.createBufferSource();s.buffer=brown?BROWN:WHITE;s.loop=true;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;
+  const g=AC.createGain();g.gain.value=v;s.connect(fl);fl.connect(g);outTo(X,bus||X.amb,g,wet);
+  if(lfo){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=lfo[0];lg.gain.value=lfo[1];l.connect(lg);lg.connect(g.gain);l.start();X.nodes.push(l)}
+  if(flfo){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=flfo[0];lg.gain.value=flfo[1];l.connect(lg);lg.connect(fl.frequency);l.start();X.nodes.push(l)}
+  s.start(0,Math.random()*3);X.nodes.push(s);
+}
+function drone(X,ms,o={}){const {type="sine",v=.04,lp=500,wet=.3}=o;ms.forEach(m=>{const osc=AC.createOscillator();osc.type=type;osc.frequency.value=mf(m);osc.detune.value=(Math.random()-.5)*10;const fl=AC.createBiquadFilter();fl.type="lowpass";fl.frequency.value=lp;const g=AC.createGain();g.gain.value=v;osc.connect(fl);fl.connect(g);outTo(X,X.mus,g,wet);osc.start();X.nodes.push(osc)})}
+function run(X,stepSec,onStep,events){
+  let next=AC.currentTime+.2,step=0,evT=AC.currentTime+.1;
+  const tick=()=>{const h=AC.currentTime+1.2;
+    if(onStep)while(next<h){onStep(step,next);next+=stepSec;step++}
+    while(evT<h){for(const [rate,fn] of events||[])if(Math.random()<rate*.1){const tt=evT+Math.random()*.1;fn.length>=2?fn(X,tt):fn(tt)}evT+=.1}};
+  tick();X.timers.push(setInterval(tick,200));
+}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+const DOR=[0,2,3,5,7,9,10],AEO=[0,2,3,5,7,8,10],MIX=[0,2,4,5,7,9,10],PHR=[0,1,3,5,7,8,10],PENT=[0,2,4,7,9];
+function walker(scale,root,span){let i=Math.floor(span/2);return (j=[-2,-1,-1,0,1,1,2])=>{i=clamp(i+pick(j),0,span);return root+12*Math.floor(i/scale.length)+scale[i%scale.length]}}
+/* instruments */
+const pluck=(X,m,t,v=.11,d=.9)=>{tone(X,X.mus,{type:"triangle",f:mf(m),t,a:.004,d,v,lp:2600,wet:.25});tone(X,X.mus,{f:mf(m+12),t,a:.003,d:d*.5,v:v*.3,wet:.2})};
+const harp=(X,m,t,v=.09)=>pluck(X,m,t,v,2.2);
+const flute=(X,m,t,len,v=.06)=>{tone(X,X.mus,{f:mf(m),t,a:.07,d:len,v,vib:[5,mf(m)*.006],wet:.35});nburst(X,X.mus,{t,d:len*.7,v:v*.12,f:mf(m)*2,q:3,a:.05,wet:.2})};
+const pad=(X,ms,t,len,v=.022)=>ms.forEach(m=>[-6,6].forEach(c=>tone(X,X.mus,{type:"sawtooth",f:mf(m)*Math.pow(2,c/1200),t,a:len*.35,d:len*.75,v,lp:900,wet:.5})));
+const kick=(X,t,v=.45,f=110)=>tone(X,X.mus,{f,f2:40,glide:.25,t,a:.003,d:.35,v,wet:.15});
+const hand=(X,t,v=.2)=>{tone(X,X.mus,{f:210,f2:120,glide:.12,t,a:.002,d:.15,v,wet:.1});nburst(X,X.mus,{t,d:.04,v:v*.35,f:2500,wet:.05})};
+const stab=(X,ms,t,v=.035)=>ms.forEach(m=>tone(X,X.mus,{type:"sawtooth",f:mf(m),t,a:.04,d:1.1,v,lp:1200,wet:.35}));
+/* ambience */
+const murmur=(X,v)=>[300,650,1100,1800].forEach(f=>bed(X,{type:"bandpass",f,q:2.5,v,lfo:[.3+Math.random()*1.4,v*.8]}));
+const clink=(X,t)=>{const f=2200+Math.random()*1800;[1,1.48,2.1].forEach((r,i)=>tone(X,X.amb,{f:f*r,t,a:.002,d:.25-i*.05,v:.022,wet:.2}))};
+const crackle=(X,t)=>nburst(X,X.amb,{t,d:.004+Math.random()*.012,v:.04+Math.random()*.1,type:"highpass",f:1500+Math.random()*2000,q:.5,wet:.02});
+const bird=(X,t)=>{let tt=t;const base=2600+Math.random()*2000,n=2+Math.floor(Math.random()*5);for(let i=0;i<n;i++){const up=Math.random()>.5;tone(X,X.amb,{f:base*(up?.8:1.2),f2:base*(up?1.25:.8),glide:.07,t:tt,a:.01,d:.08,v:.022,wet:.25});tt+=.09+Math.random()*.08}};
+const cricket=(X,t)=>{for(let i=0;i<3;i++)tone(X,X.amb,{f:4400,t:t+i*.045,a:.005,d:.03,v:.01,wet:.1})};
+const owl=(X,t)=>{tone(X,X.amb,{f:390,f2:350,glide:.4,t,a:.08,d:.45,v:.045,wet:.5});tone(X,X.amb,{f:385,f2:340,glide:.5,t:t+.75,a:.08,d:.6,v:.04,wet:.5})};
+const drip=(X,t)=>tone(X,X.amb,{f:1400+Math.random()*900,f2:500,glide:.06,t,a:.002,d:.09,v:.045,wet:.8});
+const thunder=(X,t)=>nburst(X,X.amb,{t,d:3+Math.random()*3,v:.45,type:"lowpass",f:180+Math.random()*200,q:.5,brown:true,a:.3,wet:.4});
+const hooves=(X,t)=>{let tt=t;const n=6+Math.floor(Math.random()*8);for(let i=0;i<n;i++){nburst(X,X.amb,{t:tt,d:.03,v:.07,f:900,q:3,wet:.15});nburst(X,X.amb,{t:tt+.11,d:.03,v:.05,f:700,q:3,wet:.15});tt+=.42}};
+const bell=(X,t,f=220,v=.045)=>[.5,1,1.19,1.5,2,2.5,3].forEach((r,i)=>tone(X,X.amb,{f:f*r,t,a:.003,d:4-i*.4,v:v/(1+i*.6),wet:.6}));
+const anvil=(X,t)=>{for(let i=0;i<3;i++)[1,2.7,4.1].forEach(r=>tone(X,X.amb,{f:620*r,t:t+i*.55,a:.001,d:.5,v:.012,wet:.3}))};
+const clash=(X,t)=>{[1230,1870,2660,3510,4400].forEach(f=>tone(X,X.amb,{type:"square",f:f*(.95+Math.random()*.1),t,a:.001,d:.4+Math.random()*.4,v:.01,lp:6000,wet:.3}));nburst(X,X.amb,{t,d:.08,v:.12,type:"highpass",f:3000,wet:.2})};
+const shout=(X,t)=>{const f=150+Math.random()*90,d=.6+Math.random()*.6;tone(X,X.amb,{type:"sawtooth",f,f2:f*.8,glide:d,t,a:.08,d,v:.018,lp:700,vib:[6,4],wet:.6});nburst(X,X.amb,{t,d,v:.03,f:900,q:4,a:.1,wet:.5})};
+const chains=(X,t)=>{const n=3+Math.floor(Math.random()*4);for(let i=0;i<n;i++){const tt=t+i*(.06+Math.random()*.08);[800,1340,2100].forEach(f=>tone(X,X.amb,{type:"triangle",f:f*(.9+Math.random()*.2),t:tt,a:.001,d:.12,v:.012,wet:.6}))}};
+const gull=(X,t)=>{const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++)tone(X,X.amb,{type:"sawtooth",f:1700,f2:1050,glide:.25,t:t+i*.35,a:.02,d:.25,v:.01,lp:2500,vib:[18,30],wet:.4})};
+const creak=(X,t)=>tone(X,X.amb,{type:"sawtooth",f:90+Math.random()*60,f2:70,glide:.9,t,a:.2,d:.9,v:.016,lp:700,vib:[11,8],wet:.3});
+const clack=(X,t)=>[0,.13].forEach(o=>nburst(X,X.amb,{t:t+o,d:.06,v:.22,f:350,q:2,brown:true,wet:.1}));
+const gust=(X,t)=>nburst(X,X.amb,{t,d:3+Math.random()*3,v:.1,type:"bandpass",f:500,f2:900,q:.7,brown:true,a:1.5,wet:.1});
+const wail=(X,t)=>tone(X,X.amb,{type:"sawtooth",f:300+Math.random()*200,f2:180,glide:2,t,a:.6,d:2,v:.012,lp:900,vib:[5,10],wet:.8});
+const SCENES=[
+  {id:"tavern",lvl:2.4,icon:"🍺",name:"Tavern",desc:"Chatter, clinking tankards, a crackling hearth and a lively lute jig.",start(X){
+    murmur(X,.035);bed(X,{brown:true,f:250,v:.05});const w=walker(DOR,62,11);
+    run(X,.22,(s,t)=>{const b=s%12;if(s%6===0){kick(X,t,.18,95);pluck(X,b<6?50:45,t,.09,1.1)}if(s%6===3)hand(X,t,.12);if(Math.random()<.85)pluck(X,w(),t,.08,.45)},[[.5,clink],[5,crackle]])}},
+  {id:"meadow",lvl:1.5,icon:"🌾",name:"Open fields",desc:"Wind over the grass, birdsong and a gentle shepherd's flute.",start(X){
+    bed(X,{brown:true,f:600,v:.12,flfo:[.07,250]});const w=walker(PENT,67,9);
+    run(X,.6,(s,t)=>{if(s%8===0)[55,62,67].forEach((m,i)=>harp(X,m,t+i*.15,.06));if(Math.random()<.55)flute(X,w(),t,.5+Math.random()*.7)},[[.35,bird]])}},
+  {id:"town",lvl:2,icon:"🏘️",name:"Busy town",desc:"Market crowds, hooves on cobbles, a blacksmith's anvil and a distant bell.",start(X){
+    murmur(X,.05);bed(X,{brown:true,f:400,v:.04});const w=walker(MIX,67,11);
+    run(X,.3,(s,t)=>{if(s%8===0)pluck(X,s%16?50:55,t,.08,1.2);if(Math.random()<.6)pluck(X,w(),t,.06,.5);if(s%32>=24&&Math.random()<.5)flute(X,w()+12,t,.3,.04)},[[.06,hooves],[.06,anvil],[.02,(t)=>bell(X,t,330,.03)],[.15,clink]])}},
+  {id:"battle",lvl:1.1,icon:"⚔️",name:"Battle",desc:"War drums, clashing steel, distant war cries and brass.",start(X){
+    bed(X,{type:"bandpass",f:600,q:1,v:.05,lfo:[.15,.035]});drone(X,[38,45],{type:"sawtooth",v:.02,lp:300});
+    run(X,.21,(s,t)=>{const b=s%8;if([0,3,4,6].includes(b))kick(X,t,.5,b===0?100:85);else hand(X,t,.08);if(s%16===0)stab(X,s%32?[50,57,62]:[48,55,60],t);if(s%64===56)stab(X,[52,59,64],t,.03)},[[1.1,clash],[.5,shout]])}},
+  {id:"forest",lvl:1.6,icon:"🌲",name:"Forest",desc:"Rustling leaves, a babbling stream, birdsong and harp.",start(X){
+    bed(X,{type:"highpass",f:2500,v:.025,lfo:[.1,.015]});bed(X,{type:"bandpass",f:1300,q:.8,v:.04,lfo:[3,.008]});
+    const ch=[[57,60,64],[53,57,60],[55,59,62],[57,60,64]];
+    run(X,.32,(s,t)=>{const c=ch[Math.floor(s/8)%4],i=s%8;harp(X,c[[0,1,2,1,0,2,1,2][i]]+(i>3?12:0),t,.06);if(i===0)harp(X,c[0]-12,t,.07)},[[.45,bird]])}},
+  {id:"dungeon",lvl:1.3,icon:"🕯️",name:"Dungeon",desc:"Dripping stone, rattling chains, a low rumble and eerie notes.",start(X){
+    drone(X,[33,40],{v:.035,lp:300});bed(X,{brown:true,f:90,v:.18});const w=walker(PHR,45,10);
+    run(X,1,(s,t)=>{if(Math.random()<.3)harp(X,w(),t,.06);if(s%12===6&&Math.random()<.5)flute(X,w()+24,t,2,.025)},[[.4,drip],[.03,chains]])}},
+  {id:"campfire",lvl:1.8,icon:"🔥",name:"Campfire at night",desc:"Crackling fire, crickets, an owl and a soft lute.",start(X){
+    bed(X,{brown:true,f:300,v:.08});const ch=[[52,55,59],[48,52,55],[50,54,57],[47,50,54]];
+    run(X,.45,(s,t)=>{const c=ch[Math.floor(s/8)%4],i=s%8;pluck(X,c[[0,1,2,1,2,1,0,2][i]]+(i===4?12:0),t,.06,1.4)},[[6,crackle],[.8,cricket],[.04,owl]])}},
+  {id:"storm",icon:"⛈️",name:"Storm",desc:"Heavy rain, howling wind, rolling thunder and a dark swell.",start(X){
+    bed(X,{type:"highpass",f:900,v:.12});bed(X,{type:"lowpass",f:5000,v:.05});bed(X,{brown:true,f:500,v:.12,lfo:[.08,.06]});
+    run(X,1,(s,t)=>{if(s%16===0)pad(X,s%32?[38,45,50]:[36,43,48],t,12,.015)},[[.05,gust],[.04,thunder]])}},
+  {id:"temple",lvl:2.6,icon:"⛪",name:"Temple",desc:"A choir of voices, echoing bells and hushed stone halls.",start(X){
+    bed(X,{brown:true,f:300,v:.03});const pr=[[50,57,62,65],[46,53,58,62],[53,57,60,65],[48,55,60,64]];
+    run(X,1,(s,t)=>{if(s%6===0)pad(X,pr[(s/6)%4],t,7,.018)},[[.05,(t)=>bell(X,t,196,.05)]])}},
+  {id:"harbour",icon:"⚓",name:"Harbour",desc:"Rolling waves, gulls, creaking timbers and a sea shanty.",start(X){
+    bed(X,{brown:true,f:500,v:.12,lfo:[.09,.1]});const w=walker(DOR,62,9);
+    run(X,.35,(s,t)=>{if(s%6===0)pluck(X,s%12?45:50,t,.08,1.3);if(s%6===3)hand(X,t,.08);if(s%2===0&&Math.random()<.75)flute(X,w(),t,.55,.05)},[[.12,gull],[.1,creak],[.02,(t)=>bell(X,t,620,.025)]])}},
+  {id:"infernal",icon:"🚂",name:"Infernal Express",desc:"For the Avernus Express: rumbling rails, hellfire and distant wails.",start(X){
+    bed(X,{brown:true,f:120,v:.25});bed(X,{brown:true,f:300,v:.05});drone(X,[29,30,41],{type:"sawtooth",v:.012,lp:220});const w=walker(PHR,57,9);
+    run(X,.55,(s,t)=>{if(s%2===0)clack(X,t);if(s%8===0)kick(X,t,.3,70);if(s%16===8&&Math.random()<.6)flute(X,w(),t,1.6,.025)},[[3,crackle],[.04,wail],[.02,chains]])}}
+];
+function stopMusic(){
+  if(!curMus)return;const X=curMus.X,t=AC.currentTime;X.timers.forEach(clearInterval);
+  [X.out,X.send].forEach(g=>{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+1.2)});
+  setTimeout(()=>{X.nodes.forEach(n=>{try{n.stop()}catch(e){}});try{X.out.disconnect();X.send.disconnect()}catch(e){}},1500);
+  curMus=null;
+}
+function playMusic(id){
+  try{audio()}catch(e){toastMsg("This browser can't play the music");return}
+  if(curMus&&curMus.id===id){stopMusic();render();return}
+  stopMusic();const sc=SCENES.find(x=>x.id===id);if(!sc)return;
+  const X=mkScene(sc.lvl||1);sc.start(X);curMus={id,X,name:sc.name};render();
+}
+function musicHTML(){
+  return `<div class="dl-sec-h"><h2>Music &amp; ambience</h2></div>
+  <p class="hint" style="margin-top:6px">Click a scene to play it, click again to stop. Choosing another scene fades across. Everything is made live in your browser: free, offline and endless.</p>
+  <div class="dl-mus-ctl dl-card">
+    <div class="dl-mus-now">${curMus?`<span class="dl-eq"><i></i><i></i><i></i></span> Playing <b>${esc(curMus.name)}</b>`:`<span class="dl-faint">Nothing playing</span>`}</div>
+    <label class="dl-range"><span>Volume</span><input type="range" min="0" max="1" step="0.01" value="${MUS.vol}" data-mus="vol" aria-label="Volume"></label>
+    <label class="dl-range"><span>Ambience</span><input type="range" min="0" max="1" step="0.01" value="${MUS.mix}" data-mus="mix" aria-label="Balance between ambience and music"><span>Music</span></label>
+    ${curMus?`<button class="btn" data-act="dlMusStop">⏹ Stop</button>`:""}
+  </div>
+  <div class="dl-mus">${SCENES.map(s=>`<button class="dl-musbox${curMus&&curMus.id===s.id?" on":""}" data-act="dlMus" data-id="${s.id}" aria-pressed="${!!(curMus&&curMus.id===s.id)}">
+    <span class="dl-music">${s.icon}</span><span class="dl-mustx"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></span>
+    <span class="dl-musst">${curMus&&curMus.id===s.id?`<span class="dl-eq"><i></i><i></i><i></i></span>`:"▶"}</span></button>`).join("")}</div>
+  <p class="hint" style="margin-top:12px">Tip: keep the volume moderate while the mic is listening, so the AI hears voices over the music.</p>`;
+}
+function musInput(t){
+  const k=t.dataset.mus;MUS[k]=+t.value;lsSet("tablekeeper.music",MUS);
+  if(k==="vol"&&MASTER)MASTER.gain.setTargetAtTime(MUS.vol,AC.currentTime,.05);
+  if(k==="mix"&&curMus)mixOf(curMus.X);
+}
+
 /* ---- Change engine (AI and manual), every change can be undone ---- */
 function plByName(name){
   const ps=dmCamp().players,n=nrm(name);if(!n)return null;const f=n.split(" ")[0];
@@ -2844,6 +3018,8 @@ function dlClick(act,b){
       askAI("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
     case "dlNanoSetup":setupNano(false);return true;
     case "dlGen":genRoll(b.dataset.k);return true;
+    case "dlMus":playMusic(b.dataset.id);return true;
+    case "dlMusStop":stopMusic();render();return true;
     case "dlGenAI":genAI();return true;
     case "dlGenPrev":{const a=GEN[b.dataset.k],i=+b.dataset.i;if(a[i]){const x=a.splice(i,1)[0];a.unshift(x);render()}return true}
     case "dlGive":genGive(b.dataset.k);return true;
@@ -2977,6 +3153,7 @@ document.addEventListener("change",e=>{
 let nt;
 document.addEventListener("focusout",()=>{if(renderHeld)setTimeout(()=>{if(renderHeld)render()},50)});
 document.addEventListener("input",e=>{
+  if(e.target.dataset&&e.target.dataset.mus){musInput(e.target);return}
   if(e.target.dataset&&e.target.dataset.dlq){const L=DL();if(e.target.dataset.dlq==="npc"){npcQ=e.target.value;const x=document.getElementById("dlNpcList");if(x)x.innerHTML=npcListHTML(L)}else{tlQ=e.target.value;const x=document.getElementById("dlTl");if(x)x.innerHTML=trackHTML(L)}return}
   if(e.target.dataset.notes){const p=findP(e.target.dataset.notes);if(!p)return;p.notes=e.target.value;clearTimeout(nt);nt=setTimeout(()=>commit(keyFor(p.id)),500)}
 });
