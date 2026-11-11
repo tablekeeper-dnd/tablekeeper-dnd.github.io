@@ -882,37 +882,69 @@ function build(cls,race,lvl){
 
 /* ---------- Spells (SRD 5.1 lists). Codes: A artificer B bard C cleric D druid P paladin R ranger S sorcerer K warlock W wizard ---------- */
 const SPELL_SRC=`Acid Splash|0|SWA
+Blade Ward|0|BSKW
+Booming Blade|0|ASKW
 Chill Touch|0|SKW
+Control Flames|0|DSW
+Create Bonfire|0|ADSKW
 Dancing Lights|0|BSWA
 Druidcraft|0|D
 Eldritch Blast|0|K
+Elementalism|0|DSW
 Fire Bolt|0|SWA
+Friends|0|BSKW
+Frostbite|0|ADSKW
+Green-Flame Blade|0|ASKW
 Guidance|0|CDA
+Gust|0|DSW
+Infestation|0|DSKW
 Light|0|BCSWA
+Lightning Lure|0|ASKW
 Mage Hand|0|BSKWA
+Magic Stone|0|ADK
 Mending|0|BCDSWA
 Message|0|BSWA
+Mind Sliver|0|SKW
 Minor Illusion|0|BSKW
+Mold Earth|0|DSW
 Poison Spray|0|DSKWA
 Prestidigitation|0|BSKWA
+Primal Savagery|0|D
 Produce Flame|0|D
 Ray of Frost|0|SWA
 Resistance|0|CDA
 Sacred Flame|0|C
+Shape Water|0|ADSW
 Shillelagh|0|D
 Shocking Grasp|0|SWA
+Sorcerous Burst|0|S
 Spare the Dying|0|CA
+Starry Wisp|0|BD
+Sword Burst|0|ASKW
 Thaumaturgy|0|C
+Thunderclap|0|ABDSKW
+Toll the Dead|0|CKW
 True Strike|0|BSKW
 Vicious Mockery|0|B
+Word of Radiance|0|C
+Absorb Elements|1|ADRSW
 Alarm|1|RWA
 Animal Friendship|1|BDR
+Armor of Agathys|1|K
+Arms of Hadar|1|K
 Bane|1|BC
+Beast Bond|1|DR
 Bless|1|CP
 Burning Hands|1|SW
+Catapult|1|ASW
+Cause Fear|1|KW
+Ceremony|1|CP
+Chaos Bolt|1|S
 Charm Person|1|BDSKW
+Chromatic Orb|1|SW
 Color Spray|1|SW
 Command|1|CP
+Compelled Duel|1|P
 Comprehend Languages|1|BSKW
 Create or Destroy Water|1|CD
 Cure Wounds|1|BCDPRA
@@ -920,7 +952,11 @@ Detect Evil and Good|1|CP
 Detect Magic|1|BCDPRSWA
 Detect Poison and Disease|1|CDPR
 Disguise Self|1|BSWA
+Dissonant Whispers|1|B
 Divine Favor|1|P
+Divine Smite|1|P
+Earth Tremor|1|BDSW
+Ensnaring Strike|1|R
 Entangle|1|D
 Expeditious Retreat|1|SKWA
 Faerie Fire|1|BDA
@@ -932,11 +968,14 @@ Fog Cloud|1|DRSW
 Goodberry|1|DR
 Grease|1|WA
 Guiding Bolt|1|C
+Hail of Thorns|1|R
 Healing Word|1|BCDA
 Hellish Rebuke|1|K
 Heroism|1|BP
+Hex|1|K
 Hideous Laughter|1|BW
 Hunter's Mark|1|R
+Ice Knife|1|DSW
 Identify|1|BWA
 Illusory Script|1|BKW
 Inflict Wounds|1|C
@@ -946,28 +985,48 @@ Mage Armor|1|SW
 Magic Missile|1|SW
 Protection from Evil and Good|1|CPKW
 Purify Food and Drink|1|CDPA
+Ray of Sickness|1|SW
 Sanctuary|1|CA
+Searing Smite|1|P
 Shield|1|SW
 Shield of Faith|1|CP
 Silent Image|1|BSW
+Silvery Barbs|1|BSW
 Sleep|1|BSW
+Snare|1|ADRW
 Speak with Animals|1|BDR
+Tasha's Caustic Brew|1|ASW
+Thunderous Smite|1|P
 Thunderwave|1|BDSW
 Unseen Servant|1|BKW
+Witch Bolt|1|SKW
+Wrathful Smite|1|P
+Zephyr Strike|1|R
 Acid Arrow|2|W
+Aganazzar's Scorcher|2|SW
 Aid|2|CPA
 Alter Self|2|SWA
 Animal Messenger|2|BDR
 Arcane Lock|2|WA
+Arcane Vigor|2|SW
 Augury|2|C
 Barkskin|2|DR
+Beast Sense|2|DR
 Blindness/Deafness|2|BCSW
 Blur|2|SWA
+Borrowed Knowledge|2|BCKW
+Branding Smite|2|P
 Calm Emotions|2|BC
+Cloud of Daggers|2|BSKW
 Continual Flame|2|CWA
+Cordon of Arrows|2|R
+Crown of Madness|2|BSKW
 Darkness|2|SKW
 Darkvision|2|DRSWA
 Detect Thoughts|2|BSW
+Dragon's Breath|2|SW
+Dust Devil|2|DSW
+Earthbind|2|DSKW
 Enhance Ability|2|BCDSA
 Enlarge/Reduce|2|SWA
 Enthrall|2|BK
@@ -977,9 +1036,11 @@ Flame Blade|2|D
 Flaming Sphere|2|DW
 Gentle Repose|2|CW
 Gust of Wind|2|DSW
+Healing Spirit|2|DR
 Heat Metal|2|BDA
 Hold Person|2|BCDSKW
 Invisibility|2|BSKWA
+Kinetic Jaunt|2|ABSW
 Knock|2|BSW
 Lesser Restoration|2|BCDPRA
 Levitate|2|SWA
@@ -987,49 +1048,83 @@ Locate Animals or Plants|2|BDR
 Locate Object|2|BCDPRW
 Magic Mouth|2|BWA
 Magic Weapon|2|PWA
+Maximilian's Earthen Grasp|2|SW
+Mind Spike|2|SKW
 Mirror Image|2|SKW
 Misty Step|2|SKW
 Moonbeam|2|D
+Nathair's Mischief|2|BSW
+Nystul's Magic Aura|2|W
 Pass without Trace|2|DR
+Phantasmal Force|2|BSW
 Prayer of Healing|2|C
 Protection from Poison|2|CDPRA
+Pyrotechnics|2|ASW
 Ray of Enfeeblement|2|KW
+Rime's Binding Ice|2|SW
 Rope Trick|2|WA
 Scorching Ray|2|SW
 See Invisibility|2|BSWA
+Shadow Blade|2|SKW
 Shatter|2|BSKW
+Shining Smite|2|P
 Silence|2|BCR
+Skywrite|2|ABDW
+Snilloc's Snowball Swarm|2|SW
 Spider Climb|2|SKWA
 Spike Growth|2|DR
 Spiritual Weapon|2|C
 Suggestion|2|BSKW
+Summon Beast|2|DR
+Tasha's Mind Whip|2|SW
+Vortex Warp|2|ASW
 Warding Bond|2|C
+Warding Wind|2|BDSW
 Web|2|SWA
+Wither and Bloom|2|DSW
 Zone of Truth|2|BCP
 Animate Dead|3|CW
+Ashardalon's Stride|3|RSW
+Aura of Vitality|3|P
 Beacon of Hope|3|C
 Bestow Curse|3|BCW
+Blinding Smite|3|P
 Blink|3|SWA
 Call Lightning|3|D
+Catnap|3|ABSW
 Clairvoyance|3|BCSW
 Conjure Animals|3|DR
+Conjure Barrage|3|R
 Counterspell|3|SKW
 Create Food and Water|3|CPA
+Crusader's Mantle|3|P
 Daylight|3|CDPRS
 Dispel Magic|3|BCDPSKWA
+Elemental Weapon|3|AP
+Enemies Abound|3|BKSW
+Erupting Earth|3|DSW
 Fear|3|BSKW
+Feign Death|3|BCDW
 Fireball|3|SW
+Flame Arrows|3|ADRSW
 Fly|3|SKWA
 Gaseous Form|3|SKW
 Glyph of Warding|3|BCWA
 Haste|3|SWA
+Hunger of Hadar|3|K
 Hypnotic Pattern|3|BSKW
+Intellect Fortress|3|ABSKW
+Leomund's Tiny Hut|3|BW
+Life Transference|3|CW
+Lightning Arrow|3|R
 Lightning Bolt|3|SW
 Magic Circle|3|CPKW
 Major Image|3|BSKW
 Mass Healing Word|3|C
 Meld into Stone|3|CD
+Melf's Minute Meteors|3|SW
 Nondetection|3|BRW
+Phantom Steed|3|W
 Plant Growth|3|BDR
 Protection from Energy|3|CDRSWA
 Remove Curse|3|CPKW
@@ -1040,16 +1135,29 @@ Slow|3|SW
 Speak with Dead|3|BC
 Speak with Plants|3|BDR
 Spirit Guardians|3|C
+Spirit Shroud|3|CKPW
 Stinking Cloud|3|BSW
+Summon Fey|3|DRKW
+Summon Lesser Demons|3|KW
+Summon Shadowspawn|3|KW
+Summon Undead|3|KW
+Thunder Step|3|SKW
+Tidal Wave|3|DSW
+Tiny Servant|3|AW
 Tongues|3|BCSKW
 Vampiric Touch|3|KW
+Wall of Sand|3|W
+Wall of Water|3|DSW
 Water Breathing|3|DRSWA
 Water Walk|3|CDRSA
 Wind Wall|3|DR
 Arcane Eye|4|CWA
+Aura of Life|4|P
+Aura of Purity|4|P
 Banishment|4|CPSKW
 Black Tentacles|4|W
 Blight|4|DSKW
+Charm Monster|4|BDSKW
 Compulsion|4|B
 Confusion|4|BDSW
 Conjure Minor Elementals|4|DW
@@ -1059,68 +1167,114 @@ Death Ward|4|CPA
 Dimension Door|4|BSKW
 Divination|4|C
 Dominate Beast|4|DS
+Elemental Bane|4|ADKW
 Fabricate|4|WA
 Faithful Hound|4|W
+Find Greater Steed|4|P
 Fire Shield|4|W
+Fount of Moonlight|4|BD
 Freedom of Movement|4|BCDRA
 Giant Insect|4|D
+Grasping Vine|4|DR
 Greater Invisibility|4|BSW
 Guardian of Faith|4|C
+Guardian of Nature|4|DR
 Hallucinatory Terrain|4|BDKW
 Ice Storm|4|DSW
 Locate Creature|4|BCDPRW
 Phantasmal Killer|4|W
 Polymorph|4|BDSW
 Private Sanctum|4|W
+Raulothim's Psychic Lance|4|BSKW
 Resilient Sphere|4|WA
 Secret Chest|4|WA
+Sickening Radiance|4|SKW
+Staggering Smite|4|P
 Stone Shape|4|CDWA
 Stoneskin|4|DRSWA
+Storm Sphere|4|SW
+Summon Aberration|4|KW
+Summon Construct|4|AW
+Summon Elemental|4|DRW
+Summon Greater Demon|4|KW
+Vitriolic Sphere|4|SW
 Wall of Fire|4|DSW
+Watery Sphere|4|DSW
 Animate Objects|5|BSWA
 Antilife Shell|5|D
 Awaken|5|BD
+Banishing Smite|5|P
+Bigby's Hand|5|AW
+Circle of Power|5|P
 Cloudkill|5|SW
 Commune|5|C
 Commune with Nature|5|DR
 Cone of Cold|5|SW
 Conjure Elemental|5|DW
+Conjure Volley|5|R
 Contact Other Plane|5|KW
 Contagion|5|CD
+Control Winds|5|DSW
 Creation|5|SWA
+Danse Macabre|5|KW
+Dawn|5|CW
+Destructive Wave|5|P
 Dispel Evil and Good|5|CP
 Dominate Person|5|BSW
 Dream|5|BKW
+Enervation|5|SKW
+Far Step|5|SKW
 Flame Strike|5|C
 Geas|5|BCDPW
 Greater Restoration|5|BCDA
 Hallow|5|C
 Hold Monster|5|BSKW
+Holy Weapon|5|CP
+Immolation|5|SW
+Infernal Calling|5|KW
 Insect Plague|5|CDS
+Jallarzi's Storm of Radiance|5|KW
 Legend Lore|5|BCW
 Mass Cure Wounds|5|BCD
 Mislead|5|BW
 Modify Memory|5|BW
+Negative Energy Flood|5|KW
 Passwall|5|W
 Planar Binding|5|BCDKW
 Raise Dead|5|BCP
+Reincarnate|5|D
 Scrying|5|BCDKW
 Seeming|5|BSW
+Skill Empowerment|5|ABSW
+Steel Wind Strike|5|RW
+Summon Celestial|5|CP
+Summon Draconic Spirit|5|DSW
+Swift Quiver|5|R
+Synaptic Static|5|BSKW
 Telekinesis|5|SW
 Telepathic Bond|5|W
 Teleportation Circle|5|BSW
+Transmute Rock|5|ADW
 Tree Stride|5|DR
 Wall of Force|5|W
+Wall of Light|5|SKW
 Wall of Stone|5|DSWA
+Wrath of Nature|5|DR
+Yolande's Regal Presence|5|BW
+Arcane Gate|6|SKW
 Blade Barrier|6|C
+Bones of the Earth|6|D
 Chain Lightning|6|SW
 Circle of Death|6|SKW
 Conjure Fey|6|DK
 Contingency|6|W
+Create Homunculus|6|W
 Create Undead|6|CKW
 Disintegrate|6|SW
+Druid Grove|6|D
 Eyebite|6|BSKW
 Find the Path|6|BCD
+Fizban's Platinum Shield|6|SW
 Flesh to Stone|6|KW
 Forbiddance|6|C
 Globe of Invulnerability|6|SW
@@ -1129,13 +1283,26 @@ Harm|6|C
 Heal|6|CD
 Heroes' Feast|6|CD
 Instant Summons|6|W
+Investiture of Flame|6|DSKW
+Investiture of Ice|6|DSKW
+Investiture of Stone|6|DSKW
+Investiture of Wind|6|DSKW
 Irresistible Dance|6|BW
 Magic Jar|6|W
 Mass Suggestion|6|BSKW
+Mental Prison|6|SKW
 Move Earth|6|DSW
+Otiluke's Freezing Sphere|6|W
 Planar Ally|6|C
+Primordial Ward|6|D
 Programmed Illusion|6|BW
+Scatter|6|SKW
+Soul Cage|6|KW
+Summon Fiend|6|KW
 Sunbeam|6|DSW
+Tasha's Bubbling Cauldron|6|KW
+Tasha's Otherworldly Guise|6|SKW
+Tenser's Transformation|6|W
 Transport via Plants|6|D
 True Seeing|6|BCSKW
 Wall of Ice|6|W
@@ -1143,15 +1310,21 @@ Wall of Thorns|6|D
 Wind Walk|6|D
 Word of Recall|6|C
 Conjure Celestial|7|C
+Crown of Stars|7|SKW
 Delayed Blast Fireball|7|SW
 Divine Word|7|C
+Draconic Transformation|7|DSW
+Dream of the Blue Veil|7|BSKW
 Etherealness|7|BCSKW
 Finger of Death|7|SKW
 Fire Storm|7|CDS
 Forcecage|7|BKW
 Magnificent Mansion|7|BW
 Mirage Arcane|7|BDW
+Mordenkainen's Sword|7|BW
 Plane Shift|7|CDSKW
+Power Word Fortify|7|BC
+Power Word Pain|7|SKW
 Prismatic Spray|7|SW
 Project Image|7|BW
 Regenerate|7|BCD
@@ -1161,6 +1334,9 @@ Sequester|7|W
 Simulacrum|7|W
 Symbol|7|BCDW
 Teleport|7|BSW
+Temple of the Gods|7|C
+Whirlwind|7|DSW
+Abi-Dalzim's Horrid Wilting|8|SW
 Animal Shapes|8|D
 Antimagic Field|8|CW
 Antipathy/Sympathy|8|DW
@@ -1172,19 +1348,29 @@ Earthquake|8|CDS
 Feeblemind|8|BDKW
 Glibness|8|BK
 Holy Aura|8|C
+Illusory Dragon|8|W
 Incendiary Cloud|8|SW
+Maddening Darkness|8|KW
 Maze|8|W
+Mighty Fortress|8|W
 Mind Blank|8|BW
 Power Word Stun|8|BSKW
 Sunburst|8|DSW
+Telepathy|8|W
+Tsunami|8|D
 Astral Projection|9|CKW
+Blade of Disaster|9|SKW
 Foresight|9|BDKW
 Gate|9|CSW
 Imprisonment|9|KW
+Invulnerability|9|W
 Mass Heal|9|C
+Mass Polymorph|9|BSW
 Meteor Swarm|9|SW
+Power Word Heal|9|BC
 Power Word Kill|9|BSKW
 Prismatic Wall|9|W
+Psychic Scream|9|BSKW
 Shapechange|9|DW
 Storm of Vengeance|9|D
 Time Stop|9|SW
@@ -1227,7 +1413,7 @@ function spellBlock(p){
     ${r.caster?`<div class="count">Cantrips ${cnt(c.length,r.cantrips)} · Spells ${r.kind} ${cnt(s.length,r.spells)}</div>`:""}
     ${c.length?`<div class="sp-l"><span>Cantrip</span><span>${c.map(esc).join(", ")}</span></div>`:""}
     ${Object.keys(by).sort((a,b)=>a-b).map(l=>`<div class="sp-l"><span>${ORD[l-1]}</span><span>${by[l].map(esc).join(", ")}</span></div>`).join("")}
-    ${own.length?`<div class="sp-l"><span>Homebrew</span><span>${own.map(esc).join(", ")}</span></div>`:""}
+    ${own.length?`<div class="sp-l"><span>Other</span><span>${own.map(esc).join(", ")}</span></div>`:""}
     ${!c.length&&!s.length?`<p class="none" style="margin:0;color:var(--faint);font-style:italic;font-size:.88rem">No spells chosen yet</p>`:""}</div>`;
 }
 function spellOptions(r,cantrip,cur){
@@ -1236,7 +1422,7 @@ function spellOptions(r,cantrip,cur){
   let h=`<option value="">${cantrip?"Choose a cantrip…":"Choose a spell…"}</option>`;
   if(cur&&!pool.some(s=>s.n===cur))h+=`<option selected>${esc(cur)}</option>`;
   Object.keys(groups).sort((a,b)=>a-b).forEach(l=>{h+=`<optgroup label="${LVNAME(+l)}">`+groups[l].map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")+`</optgroup>`});
-  h+=`<optgroup label="Homebrew"><option value="__own">✏️ Add your own ${cantrip?"cantrip":"spell"}…</option></optgroup>`;
+  h+=`<optgroup label="Other"><option value="__own">✏️ Add your own ${cantrip?"cantrip":"spell"}…</option></optgroup>`;
   return h;
 }
 function spellSheet(p,openOwn){
