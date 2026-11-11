@@ -419,7 +419,10 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-setup .f input,.dl-setup .f select,.stack .f input,.stack .f select,.stack .f textarea{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0;width:100%}
 .dl-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dl-check{display:flex;gap:8px;align-items:center;margin-top:12px}
-.dl-check input{width:18px;height:18px;accent-color:var(--brass)}
+.dl-check input{width:18px;height:18px;accent-color:var(--brass);flex:0 0 auto}
+.dl-recap{margin:0;font-size:.82rem;color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:9px;align-items:flex-start}
+.dl-recap b{color:var(--ink)}
+.dl-recap.on{border:1px solid var(--brass);background:color-mix(in srgb,var(--brass) 10%,transparent)}
 .dl-surv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .dl-surv small{font-size:.7rem;color:var(--muted)}
 .dl-surv small b{color:var(--ink);font-weight:600}
@@ -2054,6 +2057,7 @@ function panelHTML(){
   return `<div class="dl-panel">
     <button class="btn dl-mic${wantListen&&here?" on":""}" data-act="dlMic"${!here?" disabled":""}>${!here?"🎙️ Listening in another campaign":wantListen?"⏸ Stop listening":"🎙️ Start listening"}</button>
     <div class="dl-status"><span id="dlMicSt"><i class="dl-dot${wantListen&&here?" on":""}"></i>${wantListen&&here?"Listening":"Mic off"}</span><span id="dlAiSt">${aiStatus()}</span></div>
+    <label class="dl-check dl-recap${DL().recap?" on":""}"><input type="checkbox" data-dlset="recap"${DL().recap?" checked":""}><span><b>Recap mode</b>: catching up on earlier sessions. Logs events, NPCs and items only, never HP, spell slots or combat.</span></label>
     <div class="dl-prow"><button class="btn" data-act="dlCheck">⚡ Check now</button><button class="btn" data-act="dlTx">⬇ Transcript</button><button class="btn gold" data-act="dlEnd">End session</button></div>
     <div class="dl-h"><span>Live transcript</span><span id="dlWords"></span></div>
     <div class="dl-tx" id="dlTxBox">${txHTML(T)}</div>
@@ -2249,6 +2253,7 @@ function setChange(t){
   const k=t.dataset.dlset,L=DL();
   if(k==="sessionNo"){L.sessionNo=Math.max(1,+t.value||1);dlSave();return}
   if(k==="survival"){L.survival=t.checked;dlSave();return}
+  if(k==="recap"){L.recap=t.checked;dlSave();render();toastMsg(L.recap?"Recap mode on: narrate the story so far, then press Check now":"Recap mode off: back to live play");return}
   if(k==="apiKey"){SETL.apiKey=t.value.trim();saveSETL();toastMsg("API key saved in this browser");return}
   if(k==="model"){if(t.value!=="custom")SETL.model=t.value;else SETL.model=SETL.model||"claude-sonnet-5-5";saveSETL();if(t.value==="custom"){SETL.model="custom-model";render()}return}
   if(k==="modelCustom"){SETL.model=t.value.trim()||"claude-sonnet-5-5";saveSETL();return}
@@ -2267,8 +2272,10 @@ function monByName(name){
 }
 function npcByName(name){const L=DL(),n=nrm(name);if(!n)return null;const f=n.split(" ")[0];return L.npcs.find(x=>nrm(x.name)===n)||(f.length>2?L.npcs.find(x=>nrm(x.name).split(" ")[0]===f):null)}
 function canonCond(c){c=String(c||"").trim();if(!c)return "";return CONDS.find(x=>x.toLowerCase()===c.toLowerCase())||c[0].toUpperCase()+c.slice(1)}
+const RECAP_SKIP=["hp","set_hp","temp_hp","spell_slot","condition_add","condition_remove","rest","combat_start","combat_end","monster_hp","survival"];
 function applyChange(c){
   const L=DL(),why=c.reason||"",t=c.type;
+  if(L.recap&&RECAP_SKIP.includes(t))return null;
   const E=(text,undo)=>({id:uid(),ts:Date.now(),text,why,undo});
   if(t==="monster_hp"){
     const m=monByName(c.target);if(!m)return null;const a=+c.amount||0;if(!a)return null;
@@ -2324,10 +2331,11 @@ function applyChange(c){
 }
 function addEvent(ev){
   if(!ev||!ev.title)return null;const L=DL();
-  const e={id:uid(),ts:Date.now(),session:L.sessionNo,type:EVT[ev.type]?ev.type:"plot",title:String(ev.title).slice(0,60),detail:ev.detail||"",who:Array.isArray(ev.who)?ev.who:[],
+  const sn=L.recap&&+ev.session>=1&&+ev.session<=L.sessionNo?+ev.session:L.sessionNo;
+  const e={id:uid(),ts:Date.now(),session:sn,type:EVT[ev.type]?ev.type:"plot",title:String(ev.title).slice(0,60),detail:ev.detail||"",who:Array.isArray(ev.who)?ev.who:[],
     monsters:Array.isArray(ev.monsters)?ev.monsters.filter(m=>m&&m.name).map(m=>({name:m.name,count:Math.max(1,+m.count||1),outcome:m.outcome||""})):[]};
-  L.timeline.push(e);
-  return {id:uid(),ts:Date.now(),text:`${EVT[e.type].icon} Timeline: ${e.title}`,why:"",undo:{k:"ev",id:e.id}};
+  L.timeline.push(e);L.timeline.sort((a,c)=>a.session-c.session||a.ts-c.ts);
+  return {id:uid(),ts:Date.now(),text:`${EVT[e.type].icon} Timeline: ${e.title}${sn!==L.sessionNo?" (session "+sn+")":""}`,why:"",undo:{k:"ev",id:e.id}};
 }
 function pushFeed(list){list=list.filter(Boolean);if(!list.length)return;const T=ltOf(S.core.active);T.feed.push(...list);if(T.feed.length>300)T.feed=T.feed.slice(-300);saveLT()}
 function undo(fid){
@@ -2455,6 +2463,9 @@ Events for the visual timeline (only meaningful moments, usually 0-4 per chunk):
 Log a "combat" event when a fight ends (or something notable happens in it), listing the monsters fought.
 
 If nothing changed, return {"changes":[],"events":[]}.`;
+const RECAP_NOTE=`RECAP MODE IS ON. The DM is not playing right now: they are narrating what happened EARLIER in the campaign so the notes can catch up. Do NOT output hp, set_hp, temp_hp, spell_slot, condition_add, condition_remove, rest, combat_start, monster_hp, combat_end or survival changes. DO record every NPC met (with what was learned about them), items and gold the DM says a hero still has, and log the story as timeline events: be generous, roughly one event per scene, place or carriage, in the order narrated, with monsters fought and how each fight ended. If the DM says which session something happened in, add "session": number to that event. Write event details in past tense.
+
+`;
 async function processChunk(force){
   if(busy)return;
   const id=S.core.active,T=ltOf(id),end=T.transcript.length,lines=T.transcript.slice(T.processed,end);
@@ -2463,7 +2474,7 @@ async function processChunk(force){
   busy=true;const st=document.getElementById("dlAiSt");if(st)st.innerHTML=aiStatus();
   const ctx=T.transcript.slice(Math.max(0,T.processed-8),T.processed).map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n");
   const user=`${stateText()}\n\nEARLIER TRANSCRIPT (already processed, context only, do NOT re-apply):\n${ctx||"(start of session)"}\n\nNEW TRANSCRIPT CHUNK (process this):\n${lines.map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n")}`;
-  const sys=SYS_LIVE.replace("SURVIVAL_LINE",DL().survival?`{"type":"survival","target":"Hero","stat":"food|water|warmth|sleep","amount":-1,"reason":"..."}   scale 0-5, 5 = fine`:"");
+  const sys=(DL().recap?RECAP_NOTE:"")+SYS_LIVE.replace("SURVIVAL_LINE",DL().survival?`{"type":"survival","target":"Hero","stat":"food|water|warmth|sleep","amount":-1,"reason":"..."}   scale 0-5, 5 = fine`:"");
   try{
     const out=parseJSON(await askClaude(sys,user,3000));
     if(S.core.active!==id)throw new Error("Campaign changed while the AI was reading");
