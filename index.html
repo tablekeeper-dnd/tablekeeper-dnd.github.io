@@ -424,6 +424,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-check span b{color:var(--ink)}
 .dl-recap{margin:0;font-size:.82rem;color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:9px;align-items:flex-start}
 .dl-recap b{color:var(--ink)}
+.dl-recap-tip{display:block;font-style:normal;font-weight:700;color:var(--brass);margin:2px 0 3px}
 .dl-recap.on{border:1px solid var(--brass);background:color-mix(in srgb,var(--brass) 10%,transparent)}
 .dl-surv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .dl-surv small{font-size:.7rem;color:var(--muted)}
@@ -2060,7 +2061,7 @@ function panelHTML(){
   return `<div class="dl-panel">
     <button class="btn dl-mic${wantListen&&here?" on":""}" data-act="dlMic"${!here?" disabled":""}>${!here?"🎙️ Listening in another campaign":wantListen?"⏸ Stop listening":"🎙️ Start listening"}</button>
     <div class="dl-status"><span id="dlMicSt"><i class="dl-dot${wantListen&&here?" on":""}"></i>${wantListen&&here?"Listening":"Mic off"}</span><span id="dlAiSt">${aiStatus()}</span></div>
-    <label class="dl-check dl-recap${DL().recap?" on":""}"><input type="checkbox" data-dlset="recap"${DL().recap?" checked":""}><span><b>Recap mode</b>: catching up on earlier sessions. Logs events, NPCs and items only, never HP, spell slots or combat.</span></label>
+    <label class="dl-check dl-recap${DL().recap?" on":""}"><input type="checkbox" data-dlset="recap"${DL().recap?" checked":""}><span><b>Recap mode</b> <em class="dl-recap-tip">Tick this box if you're recording after the session, not during play.</em>Catching up on earlier sessions: logs events, NPCs and items only, never HP, spell slots or combat.</span></label>
     <div class="dl-prow"><button class="btn" data-act="dlCheck">⚡ Check now</button><button class="btn" data-act="dlTx">⬇ Transcript</button><button class="btn" data-act="dlTxLoad" title="Load a saved transcript .txt back in">⬆ Load</button><input type="file" id="dlTxFile" accept=".txt,text/plain" hidden><button class="btn gold" data-act="dlEnd">End session</button></div>
     <div class="dl-h"><span>Live transcript</span><span id="dlWords"></span></div>
     <div class="dl-tx" id="dlTxBox">${txHTML(T)}</div>
