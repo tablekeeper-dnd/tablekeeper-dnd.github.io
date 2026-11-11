@@ -364,6 +364,14 @@ try{const c=JSON.parse(localStorage.getItem(LS)||"null");if(c&&c.core)S=c;}catch
 normalise();
 S.core.mode="player"; // the app always opens on the Player tab
 function cache(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+/* DM Live (dm-live/) edits the party in another tab: pick up its changes and pass them on to a live table */
+addEventListener("storage",e=>{
+  if(e.key!==LS||!e.newValue)return;
+  try{const n=JSON.parse(e.newValue);if(!n||!n.camps)return;let changed=false;
+    for(const id in n.camps){if(S.camps[id]&&n.camps[id]&&Array.isArray(n.camps[id].players)){S.camps[id].players=n.camps[id].players;changed=true}}
+    if(!changed)return;remoteTick=true;render();if(H.campId&&n.camps[H.campId])hostChanged();
+  }catch(err){}
+});
 
 /* ---------- Saving (private store, falls back to this device) ---------- */
 let db=null,col=null,online=false;
@@ -498,7 +506,7 @@ function renderDM(){
   const cp=dmCamp(),ps=cp.players;
   let h=`<div class="bar">${sel}
     <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
-    <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
+    <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button>${LIVE_OK?`<a class="btn" href="dm-live/" style="text-decoration:none;color:inherit" title="Desktop DM screen with live transcription, NPCs and a story timeline">🎙️ DM Live</a>`:""}</div>`;
   if(!ps.length)h+=`<div class="empty"><h2>No players yet</h2><p>Give players the code <b class="num" style="color:var(--brass)">${esc(meta.code)}</b>. They open <b>My campaigns</b>, join, and add their character. You can also add heroes yourself.</p><div class="join-add" style="justify-content:center"><button class="btn gold" data-act="add">+ Add a player</button></div></div>`;
   else h+=partySummary(ps,true)+`<div class="grid">`+ps.map(card).join("")+`</div>`;
   return h+combatSection();
