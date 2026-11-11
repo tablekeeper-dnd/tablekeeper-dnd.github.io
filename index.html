@@ -392,7 +392,34 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-ev small{color:var(--faint);font-size:.72rem}
 .dl-tl-ev.up .dl-ev{grid-row:1;align-self:end;margin-bottom:26px}
 .dl-tl-ev.down .dl-ev{grid-row:3;align-self:start}
-.dl-ev-mini{flex:0 0 auto;max-width:190px;margin:0;padding:4px 9px}
+.dl-ev-mini{flex:0 0 auto;max-width:170px;margin:0;padding:3px 9px}
+.dl-gen{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:12px;margin-top:4px}
+.dl-genbox{margin-top:0;display:flex;flex-direction:column;gap:10px}
+.dl-genhead{display:flex;gap:10px;align-items:flex-start}
+.dl-genhead h3{margin:0 0 2px}
+.dl-genhead .hint{margin:0}
+.dl-genic{font-size:1.6rem;line-height:1}
+.dl-genbtns{display:flex;gap:8px;flex-wrap:wrap}
+.dl-genbtns .btn.gold{flex:1}
+.dl-item{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.dl-item-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.dl-item-h b{font-family:var(--f-display);font-weight:400;font-size:1.3rem;color:var(--brass);line-height:1.15}
+.dl-item-t{font-size:.8rem;color:var(--faint);margin-top:2px}
+.dl-item p{margin:8px 0 6px}
+.dl-item ul{margin:0;padding-left:18px;font-size:.9rem}
+.dl-item li{margin:2px 0}
+.dl-rar{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap;color:var(--muted)}
+.dl-rar.r-common{color:#d6d0c4;border-color:#6d665c}
+.dl-rar.r-uncommon{color:#7fd08a;border-color:#3c7a45}
+.dl-rar.r-rare{color:#7fb2ef;border-color:#355f96}
+.dl-rar.r-very-rare{color:#c39af0;border-color:#68469a}
+.dl-rar.r-legendary{color:#f0b060;border-color:#94602a}
+.dl-give{display:flex;gap:6px;margin-top:10px}
+.dl-give select{flex:1;min-width:0}
+.dl-give .btn{min-height:38px;padding:7px 12px}
+.dl-genprev{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--faint)}
+.dl-chipbtn{font-size:.78rem;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.dl-chipbtn:hover{border-color:var(--brass);color:var(--ink)}
 .dl-ev-mini b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dl-tip{position:fixed;z-index:60;max-width:320px;background:#0f0c0a;border:1px solid var(--brass);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px #000c;font-size:.88rem;pointer-events:none}
 .dl-tip.sticky{pointer-events:auto}
@@ -2030,7 +2057,7 @@ function dmLiveView(){
   let h=`<div class="bar dl-bar"><button class="btn" data-act="dlHome">← Campaigns</button><h2 class="dl-title">${esc(meta.name)}</h2>
     <button class="btn codechip ${H.status==="ok"?"on":""}" data-act="codeInfo">Code <b class="num">${esc(meta.code)}</b></button>
     <button class="btn" data-act="campEdit">Settings</button>${LIVE_OK?`<button class="btn" data-act="importP">Import player</button>`:""}<button class="btn gold" data-act="add">+ Player</button></div>`;
-  h+=`<nav class="dl-tabs">${[["party","Party"+(cp.combat.active?" ⚔️":"")],["npcs","NPCs"],["timeline","Timeline"],["journey","Journey"],["setup","Live setup"]].map(([k,l])=>`<button class="${tk===k?"on":""}" data-act="dlTab" data-k="${k}">${l}</button>`).join("")}</nav>`;
+  h+=`<nav class="dl-tabs">${[["party","Party"+(cp.combat.active?" ⚔️":"")],["npcs","NPCs"],["timeline","Timeline"],["journey","Journey"],["setup","Live setup"],["items","🎲 Items"]].map(([k,l])=>`<button class="${tk===k?"on":""}" data-act="dlTab" data-k="${k}">${l}</button>`).join("")}</nav>`;
   if(L.fight&&!cp.combat.active)h+=`<div class="dl-fight"><span>⚔️ <b>Fight detected</b>${L.fight.monsters&&L.fight.monsters.length?": "+esc(L.fight.monsters.map(m=>m.name+(m.count>1?" ×"+m.count:"")).join(", ")):""}</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFight">Start combat</button><button class="btn ghost" data-act="dlFightNo">Dismiss</button></span></div>`;
   if(L.fightEnd&&cp.combat.active)h+=`<div class="dl-fight"><span>🏳️ Sounds like the fight is over.</span><span class="dl-fight-acts"><button class="btn gold" data-act="dlFightEnd">End combat</button><button class="btn ghost" data-act="dlFightEndNo">Not yet</button></span></div>`;
   h+=`<div class="dl-strip"><span class="dl-strip-l">Latest</span><div class="dl-strip-t" id="dlStrip">${stripHTML(L)}</div></div>`;
@@ -2039,6 +2066,7 @@ function dmLiveView(){
   else if(tk==="timeline")body=timelineHTML(L);
   else if(tk==="journey")body=journeyHTML(L);
   else if(tk==="setup")body=setupHTML(L);
+  else if(tk==="items")body=genHTML();
   else{
     const ps=cp.players;
     if(cp.combat.active)body+=combatSection();
@@ -2154,8 +2182,8 @@ function trackHTML(L){
   return h+`</div>`;
 }
 function stripHTML(L){
-  const evs=L.timeline.slice(-14);
-  return evs.length?evs.map(e=>{const t=EVT[e.type]||EVT.plot;return `<button class="dl-ev dl-ev-mini" style="--c:${t.c}" data-eid="${e.id}" data-act="dlEvTap"><b>${t.icon} ${esc(e.title)}</b></button>`}).join(""):`<span class="dl-faint">Events appear here as they happen.</span>`;
+  const evs=L.timeline.filter(e=>["location","combat","plot","quest","death"].includes(e.type)).slice(-6);
+  return evs.length?evs.map(e=>{const t=EVT[e.type]||EVT.plot;return `<button class="dl-ev dl-ev-mini" style="--c:${t.c}" data-eid="${e.id}" data-act="dlEvTap"><b>${t.icon} ${esc(e.title)}</b></button>`}).join(""):`<span class="dl-faint">Big moments appear here as they happen.</span>`;
 }
 function evSheet(id){
   const L=DL(),e=id?L.timeline.find(x=>x.id===id):{type:"plot",title:"",detail:"",who:[],monsters:[],session:L.sessionNo};
@@ -2268,6 +2296,193 @@ function setChange(t){
   if(k==="engine"){SETL.engine=t.value;saveSETL();render();return}
 }
 function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+/* ---- Random item generator (🎲 Items tab) ----
+   Magic items, potions and weapons follow the free D&D 5e rules (SRD), described in our own words.
+   Campaign items: hellish-train items for the Avernus Express, or invented by the AI for other campaigns. */
+const RAR_ORDER=["mundane","common","uncommon","rare","very rare","legendary"];
+const GEN_ITEMS=[
+  ["Bag of Holding","Wondrous item","uncommon","A cloth sack far bigger inside than out. Overfill it or tear it and everything inside spills into the Astral Plane.",["Holds 500 lb, 64 cubic ft","Always weighs 15 lb","Action to take an item out"]],
+  ["Cloak of Elvenkind","Wondrous item","uncommon","With the hood up, the wearer's colours shift to match the surroundings.",["Advantage on Stealth (hood up)","Others have disadvantage on Perception to see you","Requires attunement"]],
+  ["Boots of Elvenkind","Wondrous item","uncommon","Soft boots that make no sound on any surface.",["Footsteps are silent","Advantage on Stealth checks that rely on moving quietly"]],
+  ["Goggles of Night","Wondrous item","uncommon","Dark lenses that let the wearer see in the dark.",["Darkvision 60 ft","If you already have it, +60 ft"]],
+  ["Ring of Protection","Ring","rare","A plain silver band that turns blows aside.",["+1 to AC","+1 to all saving throws","Requires attunement"]],
+  ["Cloak of Protection","Wondrous item","uncommon","A heavy cloak stitched with warding runes.",["+1 to AC","+1 to all saving throws","Requires attunement"]],
+  ["Amulet of Health","Wondrous item","rare","A ruby pendant that hums with vigour.",["Constitution becomes 19","No effect if already 19+","Requires attunement"]],
+  ["Gauntlets of Ogre Power","Wondrous item","uncommon","Thick iron gauntlets far heavier than they look.",["Strength becomes 19","No effect if already 19+","Requires attunement"]],
+  ["Wand of Magic Missiles","Wand","uncommon","A slim wand tipped with a violet crystal.",["7 charges, regains 1d6+1 at dawn","Cast Magic Missile: 1 charge per spell level","Last charge used: roll d20, on a 1 it crumbles"]],
+  ["Wand of Web","Wand","uncommon","A wand wrapped in sticky grey thread.",["7 charges, regains 1d6+1 at dawn","1 charge: cast Web (DC 15)","Requires attunement by a spellcaster"]],
+  ["Rope of Climbing","Wondrous item","uncommon","60 ft of silk rope that moves on command.",["Command it to climb, fasten or knot itself","AC 20, 20 HP, regrows 1 HP every 5 minutes"]],
+  ["Decanter of Endless Water","Wondrous item","uncommon","A stoppered flask that never runs dry.",["Stream: 1 gallon","Fountain: 5 gallons","Geyser: 30 gallons, 30 ft long (Str save DC 13 or 1d4 and prone)"]],
+  ["Immovable Rod","Rod","uncommon","An iron rod with a button. Press it and the rod freezes in place.",["Holds up to 8,000 lb","DC 30 Strength check to move it 10 ft"]],
+  ["Sending Stones","Wondrous item","uncommon","A matched pair of smooth stones.",["Cast Sending to whoever holds the other stone","Once per day"]],
+  ["Driftglobe","Wondrous item","uncommon","A small glass sphere that floats and glows.",["Cast Light or Daylight (1/day) from it","Hovers 5 ft off the ground and follows you"]],
+  ["Bracers of Archery","Wondrous item","uncommon","Leather bracers stamped with targets.",["Proficiency with longbows and shortbows","+2 damage with them","Requires attunement"]],
+  ["Pearl of Power","Wondrous item","uncommon","A lustrous pearl warm to the touch.",["Action: regain one expended spell slot of up to 3rd level","Once per day","Requires attunement by a spellcaster"]],
+  ["Brooch of Shielding","Wondrous item","uncommon","A silver brooch shaped like a small shield.",["Resistance to force damage","Immune to Magic Missile","Requires attunement"]],
+  ["Boots of Striding and Springing","Wondrous item","uncommon","Boots with springy, oversized soles.",["Speed becomes 30 ft (never reduced by weight or armour)","Jump three times as far","Requires attunement"]],
+  ["Hat of Disguise","Wondrous item","uncommon","A plain felt hat that reshapes your look.",["Cast Disguise Self at will","Requires attunement"]],
+  ["Lantern of Revealing","Wondrous item","uncommon","A hooded lantern with violet glass.",["Burns 6 hours on 1 pint of oil","Invisible creatures and objects become visible in its bright light (30 ft)"]],
+  ["Necklace of Fireballs","Wondrous item","rare","A necklace hung with 1d6+3 glowing beads.",["Action: throw a bead up to 60 ft","It explodes as a 3rd-level Fireball (DC 15)","Throw several at once for a bigger blast"]],
+  ["Periapt of Wound Closure","Wondrous item","uncommon","A tiny silver vial on a chain.",["Automatically stabilise when dying","Double the HP you roll from Hit Dice","Requires attunement"]],
+  ["Ring of Feather Falling","Ring","rare","A ring set with a white feather in crystal.",["When you fall, you drift down at 60 ft per round","Take no falling damage","Requires attunement"]],
+  ["Ring of Jumping","Ring","uncommon","A bronze ring etched with a leaping frog.",["Cast Jump on yourself at will (bonus action)","Requires attunement"]],
+  ["Ring of Warmth","Ring","uncommon","A ring that always feels warm.",["Resistance to cold damage","Comfortable down to -50 °F","Requires attunement"]],
+  ["Wand of Secrets","Wand","uncommon","A wand that twitches near hidden things.",["3 charges, regains 1d3 at dawn","1 charge: learn of secret doors and traps within 30 ft"]],
+  ["Eyes of the Eagle","Wondrous item","uncommon","Crystal lenses that fit over the eyes.",["Advantage on sight-based Perception","See detail up to 1 mile away","Requires attunement"]],
+  ["Gloves of Swimming and Climbing","Wondrous item","uncommon","Webbed, grippy gloves.",["Climbing and swimming cost no extra movement","+5 to Athletics checks to climb or swim","Requires attunement"]],
+  ["Helm of Comprehending Languages","Wondrous item","uncommon","A light helm with a carved ear on each side.",["Cast Comprehend Languages at will"]],
+  ["Slippers of Spider Climbing","Wondrous item","uncommon","Soft slippers with sticky soles.",["Walk up walls and across ceilings","Climbing speed equals walking speed","Requires attunement"]],
+  ["Stone of Good Luck","Wondrous item","uncommon","A polished agate also called a luckstone.",["+1 to ability checks","+1 to saving throws","Requires attunement"]],
+  ["Medallion of Thoughts","Wondrous item","uncommon","A medallion engraved with a closed eye.",["3 charges, regains 1d3 at dawn","1 charge: cast Detect Thoughts (DC 13)","Requires attunement"]],
+  ["Dust of Disappearance","Wondrous item","uncommon","A small packet of glittering dust.",["Throw it: you and creatures within 10 ft turn invisible for 2d4 minutes","Ends early if they attack or cast"]],
+  ["Bead of Force","Wondrous item","rare","A small black sphere, heavier than it looks.",["Throw up to 60 ft: 5d4 force in a 10 ft radius (Dex DC 15)","Traps creatures in a sphere of force for 1 minute on a fail"]],
+  ["Cap of Water Breathing","Wondrous item","uncommon","A cap that forms a bubble around the head when underwater.",["Breathe underwater","Action to create or end the bubble"]],
+  ["Alchemy Jug","Wondrous item","uncommon","A heavy ceramic jug.",["Once per day pour a chosen liquid","e.g. 8 oz of acid, 1 oz of poison, 4 gallons of beer, 8 gallons of water"]],
+  ["Mithral Chain Shirt","Armour (medium)","uncommon","Silvery, flexible mail as light as cloth.",["AC 13 + Dex (max 2)","No disadvantage on Stealth","No Strength requirement"]],
+  ["Adamantine Breastplate","Armour (medium)","uncommon","Dark armour made from the hardest metal there is.",["AC 14 + Dex (max 2)","Any critical hit against you becomes a normal hit"]],
+  ["Circlet of Blasting","Wondrous item","uncommon","A slim golden headband set with a red gem.",["Cast Scorching Ray (+5 to hit) once per day","No attunement needed"]],
+  ["Bag of Tricks","Wondrous item","uncommon","A grey bag that seems empty.",["Pull out a fuzzy ball and throw it: it becomes a random beast for 1 hour","3 uses, regains them at dawn"]],
+  ["Horn of Blasting","Wondrous item","rare","A dented brass horn.",["Action: 30 ft cone, 5d6 thunder (Con DC 15, half on success), deafened 1 minute","20% chance it explodes each use (10d6 fire to you)"]],
+  ["Ring of Spell Storing","Ring","rare","A ring that holds up to 5 levels of spells.",["Anyone can cast a stored spell from it","Recharge it by casting spells into it","Requires attunement"]],
+  ["Spellguard Shield","Armour (shield)","very rare","A shield that hums when magic is nearby.",["+2 AC (as a shield)","Advantage on saves against spells","Spell attacks against you have disadvantage","Requires attunement"]]
+];
+const GEN_POTIONS=[
+  ["Potion of Healing","common","A red liquid that glimmers when shaken.",["Regain 2d4 + 2 HP","Action to drink"]],
+  ["Potion of Greater Healing","uncommon","A deep red, slightly warm potion.",["Regain 4d4 + 4 HP"]],
+  ["Potion of Superior Healing","rare","A thick crimson potion that glows faintly.",["Regain 8d4 + 8 HP"]],
+  ["Potion of Supreme Healing","very rare","A brilliant red potion that lights the bottle.",["Regain 10d4 + 20 HP"]],
+  ["Potion of Climbing","common","Brown liquid with silver and grey layers.",["Climbing speed = walking speed for 1 hour","Advantage on Athletics checks to climb"]],
+  ["Potion of Animal Friendship","uncommon","Muddy liquid with bits of fur in it.",["Cast Animal Friendship (DC 13) at will for 1 hour"]],
+  ["Potion of Fire Breath","uncommon","Orange liquid that flickers like a flame.",["Bonus action: exhale fire at a target within 30 ft","4d6 fire (Dex DC 13 half)","3 breaths or 1 hour"]],
+  ["Potion of Growth","uncommon","A tiny cube of ice that grows when the potion is shaken.",["Enlarge for 1d4 hours (as Enlarge/Reduce)","Advantage on Strength checks, +1d4 weapon damage"]],
+  ["Potion of Diminution","rare","A tiny cube of ice that shrinks when shaken.",["Reduce for 1d4 hours (as Enlarge/Reduce)","Disadvantage on Strength checks, -1d4 weapon damage"]],
+  ["Potion of Flying","very rare","Clear liquid with white wisps floating in it.",["Flying speed = walking speed for 1 hour","You can hover"]],
+  ["Potion of Gaseous Form","rare","A cloudy liquid that looks like fog in a bottle.",["Gaseous Form for 1 hour","Fly 10 ft, pass through small gaps, resistance to non-magic damage"]],
+  ["Potion of Hill Giant Strength","uncommon","A cloudy brown potion with a sliver of giant's fingernail.",["Strength becomes 21 for 1 hour"]],
+  ["Potion of Heroism","rare","Blue liquid that bubbles like it's boiling.",["10 temporary HP for 1 hour","Under the effect of Bless for 1 hour"]],
+  ["Potion of Invisibility","very rare","Looks like an empty bottle.",["Invisible for 1 hour","Ends early if you attack or cast a spell"]],
+  ["Potion of Mind Reading","rare","Dense purple liquid with a pink swirl.",["Detect Thoughts (DC 13) for 1 minute"]],
+  ["Potion of Poison","uncommon","Looks, smells and tastes like a Potion of Healing.",["3d6 poison (Con DC 13 half)","Poisoned, taking 3d6 each turn until you save"]],
+  ["Potion of Resistance","uncommon","A potion that changes colour with the damage it guards against.",["Resistance to one damage type for 1 hour","Roll d10: acid, cold, fire, force, lightning, necrotic, poison, psychic, radiant, thunder"]],
+  ["Potion of Speed","very rare","Yellow liquid with black streaks.",["Haste for 1 minute (no concentration)","No lethargy when it ends"]],
+  ["Potion of Water Breathing","uncommon","Cloudy green potion with a jellyfish-shaped bubble.",["Breathe underwater for 1 hour"]],
+  ["Potion of Clairvoyance","rare","Contains a floating eyeball.",["Cast Clairvoyance (no components)"]],
+  ["Potion of Vitality","very rare","Crimson liquid that pulses like a heartbeat.",["Removes exhaustion, cures disease and poison","Max Hit Dice healing for 24 hours"]],
+  ["Oil of Slipperiness","uncommon","A sticky black ointment.",["Rub on: Freedom of Movement for 8 hours","Or pour on the ground: Grease over 10 ft square for 8 hours"]],
+  ["Potion of Longevity","very rare","Amber liquid with a scorpion's tail in it.",["Your physical age drops by 1d6 + 6 years","10% chance (rising with each use) it ages you instead"]]
+];
+const GEN_WEAPONS=[
+  ["Club","1d4 bludgeoning","Light","2 lb","1 sp"],["Dagger","1d4 piercing","Finesse, light, thrown (20/60)","1 lb","2 gp"],["Greatclub","1d8 bludgeoning","Two-handed","10 lb","2 sp"],
+  ["Handaxe","1d6 slashing","Light, thrown (20/60)","2 lb","5 gp"],["Javelin","1d6 piercing","Thrown (30/120)","2 lb","5 sp"],["Light hammer","1d4 bludgeoning","Light, thrown (20/60)","2 lb","2 gp"],
+  ["Mace","1d6 bludgeoning","-","4 lb","5 gp"],["Quarterstaff","1d6 bludgeoning","Versatile (1d8)","4 lb","2 sp"],["Sickle","1d4 slashing","Light","2 lb","1 gp"],
+  ["Spear","1d6 piercing","Thrown (20/60), versatile (1d8)","3 lb","1 gp"],["Light crossbow","1d8 piercing","Ammunition (80/320), loading, two-handed","5 lb","25 gp"],
+  ["Shortbow","1d6 piercing","Ammunition (80/320), two-handed","2 lb","25 gp"],["Battleaxe","1d8 slashing","Versatile (1d10)","4 lb","10 gp"],["Flail","1d8 bludgeoning","-","2 lb","10 gp"],
+  ["Glaive","1d10 slashing","Heavy, reach, two-handed","6 lb","20 gp"],["Greataxe","1d12 slashing","Heavy, two-handed","7 lb","30 gp"],["Greatsword","2d6 slashing","Heavy, two-handed","6 lb","50 gp"],
+  ["Halberd","1d10 slashing","Heavy, reach, two-handed","6 lb","20 gp"],["Longsword","1d8 slashing","Versatile (1d10)","3 lb","15 gp"],["Maul","2d6 bludgeoning","Heavy, two-handed","10 lb","10 gp"],
+  ["Morningstar","1d8 piercing","-","4 lb","15 gp"],["Pike","1d10 piercing","Heavy, reach, two-handed","18 lb","5 gp"],["Rapier","1d8 piercing","Finesse","2 lb","25 gp"],
+  ["Scimitar","1d6 slashing","Finesse, light","3 lb","25 gp"],["Shortsword","1d6 piercing","Finesse, light","2 lb","10 gp"],["Trident","1d6 piercing","Thrown (20/60), versatile (1d8)","4 lb","5 gp"],
+  ["War pick","1d8 piercing","-","2 lb","5 gp"],["Warhammer","1d8 bludgeoning","Versatile (1d10)","2 lb","15 gp"],["Whip","1d4 slashing","Finesse, reach","3 lb","2 gp"],
+  ["Hand crossbow","1d6 piercing","Ammunition (30/120), light, loading","3 lb","75 gp"],["Heavy crossbow","1d10 piercing","Ammunition (100/400), heavy, loading, two-handed","18 lb","50 gp"],
+  ["Longbow","1d8 piercing","Ammunition (150/600), heavy, two-handed","2 lb","50 gp"]
+];
+const SWORDS=["Greatsword","Longsword","Rapier","Scimitar","Shortsword"];
+const WEAPON_MAGIC=[
+  {w:30,pre:"",rar:"mundane",fx:"A sound, ordinary weapon.",flav:["Well-worn","Dwarven-forged","Notched","Freshly sharpened","Rust-spotted","Ornate","Battered","Soot-blackened"]},
+  {w:28,pre:"+1 ",rar:"uncommon",fx:"A magic weapon that strikes truer and harder.",st:["+1 to attack and damage rolls"]},
+  {w:10,pre:"+2 ",rar:"rare",fx:"A finely made magic weapon.",st:["+2 to attack and damage rolls"]},
+  {w:3,pre:"+3 ",rar:"very rare",fx:"A masterwork of magic.",st:["+3 to attack and damage rolls"]},
+  {w:6,pre:"Vicious ",rar:"rare",fx:"A cruel weapon that finds the soft spots.",st:["On a natural 20, deal an extra 7 damage of the weapon's type"]},
+  {w:6,pre:"",suf:" of Warning",rar:"uncommon",fx:"It whispers a warning before danger strikes.",st:["Advantage on initiative","You and allies within 30 ft can't be surprised","Wakes you when combat starts","Requires attunement"]},
+  {w:5,pre:"Flame Tongue ",rar:"rare",only:SWORDS,fx:"Speak the command word (bonus action) and flames run along the blade.",st:["While lit: +2d6 fire damage on a hit","Sheds bright light 40 ft","Requires attunement"]},
+  {w:3,pre:"Frost Brand ",rar:"very rare",only:SWORDS,fx:"An icy blade that sheds light when the air is freezing.",st:["+1d6 cold damage on a hit","Resistance to fire damage","Action: put out all non-magical flames within 30 ft (once per hour)","Requires attunement"]},
+  {w:4,pre:"Dragon Slayer ",rar:"rare",fx:"Engraved with dragon scales and old oaths.",st:["+1 to attack and damage rolls","+3d6 damage against dragons"]},
+  {w:4,pre:"Giant Slayer ",rar:"rare",fx:"Heavy with runes of the giant-hunters.",st:["+1 to attack and damage rolls","+2d6 damage against giants, which must make a DC 15 Str save or fall prone"]},
+  {w:3,pre:"Fiend-Bane ",rar:"rare",fx:"Blessed steel that burns devils and demons. (Homebrew)",st:["+1 to attack and damage rolls","+2d6 radiant damage against fiends"]}
+];
+const GEN_AVERNUS=[
+  ["Conductor's Brass Whistle","Wondrous item","uncommon","A tarnished whistle that every devil on the line knows and obeys.",["Action: blow it. Devils and imps within 60 ft make a DC 13 Wis save or stop and turn towards the sound until the end of your next turn","Once per day"]],
+  ["Soul-Train Ticket","Wondrous item","common","A punched brass-edged ticket. The hole in it slowly heals over.",["Advantage on one exposure saving throw","Then it crumbles to ash"]],
+  ["Furnace Coal","Wondrous item","uncommon","A lump of coal from the engine that never cools.",["Action: throw up to 30 ft. 2d6 fire in a 5 ft radius (Dex DC 13 half)","Or hold it to stay warm all night","Burns out after 3 throws (it returns to your hand)"]],
+  ["Hellrail Spike","Weapon (dagger)","uncommon","A rail spike hammered into a crude blade.",["1d4 piercing, finesse, light, thrown (20/60)","+1d4 fire damage against a creature standing on metal"]],
+  ["Imp-Tooth Charm","Wondrous item","uncommon","A string of tiny, needle-sharp teeth.",["Tingles when an invisible imp or devil is within 30 ft","You know which direction it is in"]],
+  ["Coupling Chain","Wondrous item","uncommon","30 ft of black chain from between two carriages.",["Action: hurl it to wrap a creature within 15 ft (Dex DC 13 or restrained, escape DC 14)","Can hook onto any carriage and never slips"]],
+  ["Brimstone Lantern","Wondrous item","uncommon","A lantern that burns yellow and smells of sulphur.",["Bright light 20 ft, dim 20 ft more","Invisible fiends in the bright light become visible","Fiends in its light have disadvantage on Stealth"]],
+  ["Ash-Glass Goggles","Wondrous item","common","Smoked-glass goggles caked with soot.",["See normally through smoke, ash and fog","No penalty from bright fire light"]],
+  ["Porter's Cap","Wondrous item","uncommon","A red cap with a gold band. Passengers assume you work here.",["Advantage on Deception to pass as train crew","Ticket inspectors ignore you","Requires attunement"]],
+  ["Gable's Clipping Book","Wondrous item","common","A scrapbook of newspaper clippings that rearrange themselves.",["Once per day ask it a question","A headline appears as a vague hint (the DM decides)"]],
+  ["Infernal Timetable","Wondrous item","rare","A timetable whose ink moves as the train does.",["Shows how many carriages remain","Once per day the DM rerolls the horde clock for you"]],
+  ["Kranoc's Torn Page","Scroll","rare","A page ripped from Kranoc's spellbook, edges still smouldering.",["Cast Hellish Rebuke (2nd level, DC 14) once","Then the page burns away","Kranoc can sense where it is"]],
+  ["Stoker's Shovel","Weapon (warhammer)","uncommon","A coal shovel with a glowing red edge.",["1d8 bludgeoning, versatile (1d10)","+1d6 fire damage on a hit"]],
+  ["Eternal Pocket Watch","Wondrous item","rare","A pocket watch whose hands spin backwards.",["Once per day: reroll one d20 after you see the result (you must use the new roll)","Requires attunement"]],
+  ["Hellbound Owlbear Hide","Armour (hide)","uncommon","Scorched feathered hide that still smells of smoke.",["AC 12 + Dex (max 2), +1","Resistance to fire damage"]],
+  ["Holy Lamp Oil","Potion","uncommon","A small flask of blessed oil, golden in any light.",["Drink: remove 2 points of soul-train exposure","Or coat a weapon: +1d6 radiant against fiends for 1 minute"]],
+  ["Signal Flare of Dis","Wondrous item","common","A red flare wrapped in black paper.",["Burns for 1 minute","Imps that see it fly towards it and ignore everything else for 1 round"]],
+  ["Brass Rail Gauntlets","Wondrous item","uncommon","Gauntlets that grip like a vice.",["Advantage against being shoved or knocked off the train","Climbing the outside of a carriage costs no extra movement","Requires attunement"]],
+  ["Ticket Punch of Binding","Wondrous item","rare","A heavy ticket punch with an infernal mark.",["Action: touch a fiend (Cha DC 14) or it is restrained for 1 minute","It repeats the save at the end of each turn","Once per day"]],
+  ["Devil's Contract Scrap","Wondrous item","uncommon","A scrap of contract signed in blood. Cursed.",["Sign it: add +5 to one roll","The DM may call in one favour from you later"]],
+  ["Hellhound Collar","Wondrous item","rare","A spiked collar that is always hot.",["Action: breathe fire in a 15 ft cone, 3d6 fire (Dex DC 13 half)","Once per day","Requires attunement"]],
+  ["Ghast-Bone Key","Wondrous item","uncommon","A key carved from bone. It smells awful.",["Opens any one lock on the train","Then it snaps in two"]],
+  ["Tidewrack Trident","Weapon (trident)","rare","A Sahuagin trident dripping with seawater that never dries.",["+1 to attack and damage, 1d6 piercing, thrown (20/60), versatile (1d8)","Breathe underwater while holding it"]]
+];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function wpick(list){const t=list.reduce((a,x)=>a+x.w,0);let r=Math.random()*t;for(const x of list){if((r-=x.w)<0)return x}return list[0]}
+function genItem(k){
+  if(k==="potion"){const p=pick(GEN_POTIONS);return {name:p[0],type:"Potion",rarity:p[1],effect:p[2],stats:p[3]}}
+  if(k==="weapon"){
+    let m=wpick(WEAPON_MAGIC);let w=pick(m.only?GEN_WEAPONS.filter(x=>m.only.includes(x[0])):GEN_WEAPONS);
+    const base=[`Damage: ${w[1]}`,`Properties: ${w[2]}`,`Weight: ${w[3]} · Cost: ${w[4]}`];
+    const name=m.rar==="mundane"?`${pick(m.flav)} ${w[0].toLowerCase()}`.replace(/^./,c=>c.toUpperCase()):`${m.pre}${w[0]}${m.suf||""}`;
+    return {name,type:"Weapon ("+w[0].toLowerCase()+")",rarity:m.rar,effect:m.fx,stats:[...(m.st||[]),...base],kind:"weapon"};
+  }
+  if(k==="camp"){const p=pick(GEN_AVERNUS);return {name:p[0],type:p[1],rarity:p[2],effect:p[3],stats:p[4],kind:/^Weapon/.test(p[1])?"weapon":"item",camp:true}}
+  const p=pick(GEN_ITEMS);return {name:p[0],type:p[1],rarity:p[2],effect:p[3],stats:p[4]};
+}
+const GEN_KINDS=[["item","🎒","Random item","Magic items from the D&D rules"],["potion","🧪","Random potion","Potions, oils and the odd poison"],["weapon","⚔️","Random weapon","Ordinary, +1 to +3, or special"],["camp","🚂","Campaign item","Items made for this campaign"]];
+const GEN={item:[],potion:[],weapon:[],camp:[]};let genBusy=false;
+const isAvernus=()=>/avernus/i.test((activeMeta()||{}).name||"");
+function genHTML(){
+  return `<div class="dl-sec-h"><h2>Random items</h2></div><p class="hint" style="margin-top:6px">Click as often as you like. Give an item straight to a hero, or note it down. Based on the free D&D 5e rules.</p>
+  <div class="dl-gen">${GEN_KINDS.map(([k,ic,t,sub])=>{const cur=GEN[k][0];
+    const campNote=k==="camp"?(isAvernus()?"Hellish train items for the Avernus Express":aiReady()?"The AI invents one from your campaign":"Set up the AI in Live setup to invent items for this campaign"):sub;
+    return `<section class="dl-card dl-genbox"><div class="dl-genhead"><span class="dl-genic">${ic}</span><div><h3>${t}</h3><p class="hint">${esc(campNote)}</p></div></div>
+      <div class="dl-genbtns"><button class="btn gold" data-act="dlGen" data-k="${k}">${cur?"🎲 Another":"🎲 Roll"}</button>${k==="camp"&&isAvernus()&&aiReady()?`<button class="btn" data-act="dlGenAI">✨ Invent with AI</button>`:""}</div>
+      <div class="dl-genout" id="dlGen-${k}">${cur?itemCardHTML(cur,k):`<p class="dl-faint">Nothing rolled yet.</p>`}</div>
+      ${GEN[k].length>1?`<div class="dl-genprev"><span>Earlier:</span>${GEN[k].slice(1,5).map((x,i)=>`<button class="dl-chipbtn" data-act="dlGenPrev" data-k="${k}" data-i="${i+1}">${esc(x.name)}</button>`).join("")}</div>`:""}
+    </section>`}).join("")}</div>`;
+}
+function itemCardHTML(x,k){
+  const ps=dmCamp().players;
+  return `<div class="dl-item"><div class="dl-item-h"><b>${esc(x.name)}</b><span class="dl-rar r-${esc(x.rarity.replace(" ","-"))}">${esc(x.rarity==="mundane"?"mundane":x.rarity)}</span></div>
+    <div class="dl-item-t">${esc(x.type)}${x.camp?" · Homebrew":""}${x.ai?" · Invented by AI":""}</div>
+    <p>${esc(x.effect)}</p><ul>${(x.stats||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+    ${ps.length?`<div class="dl-give"><select class="plain" id="dlGive-${k}" aria-label="Give to">${ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><button class="btn" data-act="dlGive" data-k="${k}">Give</button></div>`:""}</div>`;
+}
+async function genAI(){
+  if(genBusy)return;if(!aiReady()){toastMsg(aiMissing());return}
+  genBusy=true;const out=document.getElementById("dlGen-camp");if(out)out.innerHTML=`<p class="dl-faint"><span class="dl-spin"></span>Inventing an item…</p>`;
+  const L=DL(),meta=activeMeta();
+  const ctx=`Campaign: ${meta.name}\n${L.story?"Story so far: "+L.story.slice(0,1200):""}\nRecent events: ${L.timeline.slice(-8).map(e=>e.title).join("; ")||"none yet"}\nParty: ${dmCamp().players.map(p=>p.name+" ("+p.cls+" "+p.lvl+")").join(", ")||"unknown"}`;
+  try{
+    const x=parseJSON(await askAI('You invent one magic item for a Dungeons & Dragons 5e game, themed on the campaign described. Make it fun, balanced for the party level, and usable at the table straight away. UK English. Return ONLY JSON: {"name":"item name","type":"e.g. Wondrous item, Weapon (longsword), Potion","rarity":"common|uncommon|rare|very rare","effect":"one or two sentences: what it looks like and does","stats":["2 to 4 short lines of rules: damage, saves with DC, uses per day, attunement"]}',ctx,600,
+      {type:"object",required:["name","type","rarity","effect","stats"],properties:{name:S_STR,type:S_STR,rarity:{type:"string",enum:["common","uncommon","rare","very rare"]},effect:S_STR,stats:{type:"array",items:S_STR}}}));
+    GEN.camp.unshift({name:String(x.name||"Mystery item"),type:String(x.type||"Wondrous item"),rarity:RAR_ORDER.includes(x.rarity)?x.rarity:"uncommon",effect:String(x.effect||""),stats:(x.stats||[]).map(String).slice(0,5),kind:/^Weapon/i.test(x.type||"")?"weapon":"item",ai:true});
+    GEN.camp.length=Math.min(GEN.camp.length,8);
+  }catch(e){toastMsg("Couldn't invent an item: "+e.message)}
+  finally{genBusy=false;render()}
+}
+function genRoll(k){
+  if(k==="camp"&&!isAvernus()){if(aiReady())return genAI();toastMsg("Set up the AI in Live setup to invent items for this campaign. Here's a general magic item instead.");GEN.camp.unshift({...genItem("item")})}
+  else GEN[k].unshift(genItem(k));
+  GEN[k].length=Math.min(GEN[k].length,8);render();
+}
+function genGive(k){
+  const x=GEN[k][0],sel=document.getElementById("dlGive-"+k);if(!x||!sel)return;
+  const p=dmCamp().players.find(q=>q.id===sel.value);if(!p)return;
+  const e=applyChange({type:"item_add",target:p.name,item:x.name,qty:1,kind:x.kind==="weapon"?"weapon":"item",reason:"Rolled on the item generator"});
+  const i=p.items.find(it=>it.n===x.name);if(i)i.note=[x.effect,...(x.stats||[])].join(" · ");
+  pushFeed([e]);dlSave();render();toastMsg(`${x.name} given to ${p.name}`);
+}
 
 /* ---- Change engine (AI and manual), every change can be undone ---- */
 function plByName(name){
@@ -2628,6 +2843,10 @@ function dlClick(act,b){
       if(!aiReady()){o.textContent="❌ "+aiMissing();return true}
       askAI("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
     case "dlNanoSetup":setupNano(false);return true;
+    case "dlGen":genRoll(b.dataset.k);return true;
+    case "dlGenAI":genAI();return true;
+    case "dlGenPrev":{const a=GEN[b.dataset.k],i=+b.dataset.i;if(a[i]){const x=a.splice(i,1)[0];a.unshift(x);render()}return true}
+    case "dlGive":genGive(b.dataset.k);return true;
     case "dlTxLoad":{const f=document.getElementById("dlTxFile");f.value="";f.onchange=async()=>{const file=f.files[0];if(!file)return;
       const txt=await file.text(),id=S.core.active,T=ltOf(id),now=Date.now();
       const lines=txt.split(/\r?\n/).map(l=>l.replace(/^\[\d{1,2}:\d{2}\]\s*/,"").trim()).filter(Boolean);
