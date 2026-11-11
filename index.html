@@ -420,6 +420,8 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .dl-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dl-check{display:flex;gap:8px;align-items:center;margin-top:12px}
 .dl-check input{width:18px;height:18px;accent-color:var(--brass);flex:0 0 auto}
+.dl-nano{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;font-size:.88rem}
+.dl-check span b{color:var(--ink)}
 .dl-recap{margin:0;font-size:.82rem;color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:9px;align-items:flex-start}
 .dl-recap b{color:var(--ink)}
 .dl-recap.on{border:1px solid var(--brass);background:color-mix(in srgb,var(--brass) 10%,transparent)}
@@ -1975,7 +1977,8 @@ const EVT={
 };
 const SURV=["food","water","warmth","sleep"];
 const DL_MODELS=[["claude-sonnet-5-5","Claude Sonnet 5.5 (recommended)"],["claude-haiku-5-5","Claude Haiku 5.5 (cheapest)"],["claude-opus-5-5","Claude Opus 5.5 (most capable)"]];
-let SETL=Object.assign({apiKey:"",model:"claude-sonnet-5-5",interval:4},lsGet("tablekeeper.live.settings")||{});
+let SETL=Object.assign({engine:"free",apiKey:"",model:"claude-sonnet-5-5",interval:4},lsGet("tablekeeper.live.settings")||{});
+SETL.interval=clamp(+SETL.interval||4,3,5);
 const saveSETL=()=>lsSet("tablekeeper.live.settings",SETL);
 let tlFilter=new Set(Object.keys(EVT)),tlQ="",npcQ="";
 
@@ -2237,13 +2240,16 @@ function setupHTML(L){
   <div class="dl-card"><h3>This campaign</h3>
     <div class="dl-2"><div class="f"><label for="ls-no">Current session number</label><input id="ls-no" type="number" inputmode="numeric" data-dlset="sessionNo" value="${L.sessionNo}"></div><span></span></div>
     <label class="dl-check"><input type="checkbox" data-dlset="survival"${L.survival?" checked":""}> Track survival (food, water, warmth, sleep) on each hero's card</label></div>
-  <div class="dl-card"><h3>Live AI (Anthropic API)</h3>
-    <p class="hint">Needed for the AI to read the transcript. The key is saved only in this browser, never on the website or with the campaign.</p>
-    <div class="f"><label for="ls-key">API key</label><input id="ls-key" type="password" data-dlset="apiKey" value="${esc(SETL.apiKey)}" placeholder="sk-ant-..."></div>
-    <div class="dl-2"><div class="f"><label for="ls-model">Model</label><select id="ls-model" data-dlset="model">${DL_MODELS.map(([v,l])=>`<option value="${v}"${SETL.model===v?" selected":""}>${l}</option>`).join("")}<option value="custom"${custom?" selected":""}>Other</option></select></div>
-      <div class="f"><label for="ls-int">Check every (minutes)</label><input id="ls-int" type="number" inputmode="numeric" min="1" max="30" data-dlset="interval" value="${SETL.interval}"></div></div>
-    ${custom?`<div class="f"><label for="ls-mc">Model id</label><input id="ls-mc" data-dlset="modelCustom" value="${esc(SETL.model)}"></div>`:""}
-    <div class="foot" style="justify-content:flex-start;align-items:center"><button class="btn" data-act="dlTest">Test the key</button><span id="dlTestOut" class="hint"></span></div></div>
+  <div class="dl-card"><h3>AI that reads the transcript</h3>
+    <label class="dl-check"><input type="radio" name="dl-eng" value="free" data-dlset="engine"${SETL.engine!=="api"?" checked":""}> <span><b>Free</b>: Google's Gemini Nano, built into Chrome and running on this computer. Nothing to pay and the transcript never leaves the laptop. Needs Chrome on a laptop or desktop (not phones).</span></label>
+    <label class="dl-check"><input type="radio" name="dl-eng" value="api" data-dlset="engine"${SETL.engine==="api"?" checked":""}> <span><b>Anthropic API</b> (paid, optional): more accurate, costs roughly £1 per long session.</span></label>
+    ${SETL.engine!=="api"?`<div class="dl-nano"><span id="dlNanoSt">${nanoStatusHTML()}</span>${nanoState==="available"?"":`<button class="btn gold" data-act="dlNanoSetup">Set up free AI</button>`}</div>`:`
+    <div class="f" style="margin-top:10px"><label for="ls-key">API key</label><input id="ls-key" type="password" data-dlset="apiKey" value="${esc(SETL.apiKey)}" placeholder="sk-ant-..."></div>
+    <div class="f" style="margin-top:8px"><label for="ls-model">Model</label><select id="ls-model" data-dlset="model">${DL_MODELS.map(([v,l])=>`<option value="${v}"${SETL.model===v?" selected":""}>${l}</option>`).join("")}<option value="custom"${custom?" selected":""}>Other</option></select></div>
+    ${custom?`<div class="f"><label for="ls-mc">Model id</label><input id="ls-mc" data-dlset="modelCustom" value="${esc(SETL.model)}"></div>`:""}`}
+    <div class="dl-2" style="margin-top:10px"><div class="f"><label for="ls-int">Check every (3 to 5 minutes)</label><input id="ls-int" type="number" inputmode="numeric" min="3" max="5" data-dlset="interval" value="${SETL.interval}"></div><span></span></div>
+    <p class="hint" style="margin-top:6px">It also checks whenever the table goes quiet for 20 seconds.</p>
+    <div class="foot" style="justify-content:flex-start;align-items:center"><button class="btn" data-act="dlTest">Test the AI</button><span id="dlTestOut" class="hint"></span></div></div>
   <div class="dl-card"><h3>Backup</h3><p class="hint">NPCs, timeline and journey are saved with the campaign. The transcript stays on this device until you end the session.</p>
     <div class="foot" style="justify-content:flex-start"><button class="btn" data-act="dlExport">⬇ Export DM Live notes</button><button class="btn" data-act="dlImport">⬆ Import notes</button><input type="file" id="dlImportF" accept=".json" hidden></div></div>
   <div class="dl-card"><h3>Example data</h3><p class="hint">Fill this campaign's NPCs and timeline with a short example story so you can see how it looks.</p>
@@ -2257,7 +2263,8 @@ function setChange(t){
   if(k==="apiKey"){SETL.apiKey=t.value.trim();saveSETL();toastMsg("API key saved in this browser");return}
   if(k==="model"){if(t.value!=="custom")SETL.model=t.value;else SETL.model=SETL.model||"claude-sonnet-5-5";saveSETL();if(t.value==="custom"){SETL.model="custom-model";render()}return}
   if(k==="modelCustom"){SETL.model=t.value.trim()||"claude-sonnet-5-5";saveSETL();return}
-  if(k==="interval"){SETL.interval=clamp(+t.value||4,1,30);saveSETL();return}
+  if(k==="interval"){SETL.interval=clamp(+t.value||4,3,5);t.value=SETL.interval;saveSETL();return}
+  if(k==="engine"){SETL.engine=t.value;saveSETL();render();return}
 }
 function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
@@ -2375,7 +2382,7 @@ function startFight(){
 }
 
 /* ---- Microphone and transcript ---- */
-let rec=null,wantListen=false,interim="",nextCheck=0,busy=false,fails=0,micCamp=null;
+let rec=null,wantListen=false,interim="",nextCheck=0,busy=false,fails=0,micCamp=null,lastSpeech=0,lastCheckAt=0;
 function addLine(text,campId){
   text=String(text||"").trim();if(!text)return;const id=campId||micCamp||S.core.active,T=ltOf(id);
   T.transcript.push({t:Date.now(),x:text});saveLT();refreshTx();
@@ -2384,9 +2391,10 @@ function addLine(text,campId){
 function startMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toastMsg("Live transcription needs Google Chrome or Microsoft Edge");return}
-  if(!SETL.apiKey)toastMsg("Listening. Add your API key in Live setup to turn on the AI.");
+  if(isFree()&&nanoState==="downloadable")setupNano(true); // uses this click to start the one-time download
+  else if(!aiReady())toastMsg("Listening. "+aiMissing()+" to turn on the AI.");
   micCamp=S.core.active;rec=new SR();rec.lang="en-GB";rec.continuous=true;rec.interimResults=true;
-  rec.onresult=e=>{let im="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)addLine(r[0].transcript,micCamp);else im+=r[0].transcript}interim=im;refreshTx()};
+  rec.onresult=e=>{let im="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal){addLine(r[0].transcript,micCamp);lastSpeech=Date.now()}else im+=r[0].transcript}interim=im;refreshTx()};
   rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){wantListen=false;render();toastMsg("Microphone blocked. Allow it from the padlock in the address bar.")}else if(e.error==="network")toastMsg("Speech service unreachable. Check the internet connection.")};
   rec.onend=()=>{interim="";if(wantListen)setTimeout(()=>{try{rec.start()}catch(err){}},250)};
   try{rec.start()}catch(err){}
@@ -2402,16 +2410,67 @@ function downloadTx(){
 addEventListener("beforeunload",e=>{if(wantListen){e.preventDefault();e.returnValue=""}});
 function aiStatus(){
   if(busy)return `<span class="dl-spin"></span>AI reading…`;
-  if(!SETL.apiKey)return "AI off (no API key)";
+  if(!aiReady())return SETL.engine==="api"?"AI off (no API key)":nanoState==="downloading"?`Downloading AI ${Math.round(nanoProg*100)}%`:nanoState==="downloadable"?"Free AI not set up":"AI unavailable here";
   if(wantListen&&micCamp===S.core.active){const s=Math.max(0,Math.round((nextCheck-Date.now())/1000));return `Next AI check ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
   const T=ltOf(S.core.active),n=T.transcript.length-T.processed;return n?`${n} new line${n>1?"s":""} to check`:"AI idle";
 }
 setInterval(()=>{
   const st=document.getElementById("dlAiSt");if(st)st.innerHTML=aiStatus();
-  if(!wantListen||busy||!SETL.apiKey||!micCamp)return;
-  if(Date.now()>=nextCheck){const T=ltOf(micCamp),w=T.transcript.slice(T.processed).reduce((a,l)=>a+l.x.split(/\s+/).length,0);
-    if(w>=12&&micCamp===S.core.active)processChunk(false);else nextCheck=Date.now()+SETL.interval*60000}
+  if(!wantListen||busy||!aiReady()||!micCamp)return;
+  const T=ltOf(micCamp),w=T.transcript.slice(T.processed).reduce((a,l)=>a+l.x.split(/\s+/).length,0),now=Date.now();
+  const pause=w>=12&&lastSpeech&&now-lastSpeech>=20000&&now-lastCheckAt>=60000;
+  if(micCamp===S.core.active&&((now>=nextCheck&&w>=12)||pause))processChunk(false);
+  else if(now>=nextCheck)nextCheck=now+SETL.interval*60000;
 },1000);
+
+/* ---- AI engines: free on-device Gemini Nano (Chrome's Prompt API) or the paid Anthropic API ---- */
+const NANO_OPTS={expectedInputs:[{type:"text",languages:["en"]}],expectedOutputs:[{type:"text",languages:["en"]}]};
+let nanoState=null,nanoProg=0;
+const hasNano=()=>typeof LanguageModel!=="undefined";
+async function nanoCheck(){if(!hasNano()){nanoState="unsupported";return nanoState}try{nanoState=await LanguageModel.availability(NANO_OPTS)}catch(e){nanoState="unavailable"}return nanoState}
+nanoCheck();
+function nanoStatusHTML(){
+  switch(nanoState){
+    case "available":return "✅ Free AI is ready on this computer.";
+    case "downloading":return `<span class="dl-spin"></span>Downloading the free AI… ${Math.round(nanoProg*100)}% (one-time; you can keep using the app)`;
+    case "downloadable":return "Not set up yet. Press <b>Set up free AI</b> for a one-time download (a few GB, needs some free disk space).";
+    case "unsupported":return "⚠️ This browser doesn't have the built-in AI. Use Google Chrome on a laptop or desktop.";
+    case "unavailable":return "⚠️ This computer can't run Chrome's built-in AI (it needs more memory, disk space or a supported graphics chip).";
+    default:return "Checking…";
+  }
+}
+function nanoSession(system){
+  return LanguageModel.create({...NANO_OPTS,initialPrompts:[{role:"system",content:system}],monitor(m){m.addEventListener("downloadprogress",e=>{nanoProg=e.loaded;nanoState=e.loaded>=1?"available":"downloading";const o=document.getElementById("dlNanoSt");if(o)o.innerHTML=nanoStatusHTML();const a=document.getElementById("dlAiSt");if(a)a.innerHTML=aiStatus()})}});
+}
+async function setupNano(quiet){
+  if(SETL.engine==="api")return;
+  await nanoCheck();
+  if(nanoState==="unsupported"||nanoState==="unavailable"){if(!quiet)toastMsg(nanoState==="unsupported"?"Use Google Chrome on a laptop or desktop for the free AI":"This computer can't run Chrome's built-in AI");render();return}
+  if(nanoState==="available"){if(!quiet)toastMsg("Free AI is ready");render();return}
+  try{
+    if(nanoState==="downloadable"){nanoState="downloading";nanoProg=0}
+    const o=document.getElementById("dlNanoSt");if(o)o.innerHTML=nanoStatusHTML();
+    const sess=await nanoSession("Reply with one word.");sess.destroy();
+    nanoState="available";toastMsg("Free AI is ready");render();
+  }catch(e){await nanoCheck();toastMsg("Couldn't set up the free AI: "+e.message);render()}
+}
+const aiReady=()=>SETL.engine==="api"?!!SETL.apiKey:nanoState==="available";
+const aiMissing=()=>SETL.engine==="api"?"Add your Anthropic API key in Live setup":nanoState==="downloading"?"The free AI is still downloading":nanoState==="downloadable"?"Set up the free AI in Live setup first":"The free AI needs Google Chrome on a laptop or desktop";
+async function askAI(system,user,maxTokens,schema){
+  if(SETL.engine==="api")return askClaude(system,user,maxTokens);
+  if(!hasNano())throw new Error("The free AI needs Google Chrome on a laptop or desktop");
+  const sess=await nanoSession(system);
+  try{return await sess.prompt(user,schema?{responseConstraint:schema}:undefined)}finally{try{sess.destroy()}catch(e){}}
+}
+const S_STR={type:"string"},S_NUM={type:"number"};
+const LIVE_SCHEMA={type:"object",required:["changes","events"],properties:{
+  changes:{type:"array",items:{type:"object",required:["type"],properties:{type:{type:"string",enum:["hp","set_hp","temp_hp","spell_slot","item_add","item_remove","gold","condition_add","condition_remove","rest","npc_add","npc_update","combat_start","monster_hp","combat_end","survival"]},
+    target:S_STR,amount:S_NUM,value:S_STR,level:S_NUM,spell:S_STR,item:S_STR,qty:S_NUM,kind:S_STR,condition:S_STR,name:S_STR,role:S_STR,location:S_STR,attitude:S_STR,background:S_STR,notes:S_STR,field:S_STR,stat:S_STR,reason:S_STR,
+    items:{type:"array",items:S_STR},monsters:{type:"array",items:{type:"object",required:["name"],properties:{name:S_STR,count:S_NUM,ac:S_NUM,hp:S_NUM}}}}}},
+  events:{type:"array",items:{type:"object",required:["type","title"],properties:{type:{type:"string",enum:Object.keys(EVT)},title:S_STR,detail:S_STR,session:S_NUM,who:{type:"array",items:S_STR},
+    monsters:{type:"array",items:{type:"object",required:["name"],properties:{name:S_STR,count:S_NUM,outcome:S_STR}}}}}}}};
+const SUM_SCHEMA={type:"object",required:["title","summary"],properties:{title:S_STR,summary:S_STR}};
+const isFree=()=>SETL.engine!=="api";
 
 /* ---- Claude ---- */
 async function askClaude(system,user,maxTokens){
@@ -2468,15 +2527,21 @@ const RECAP_NOTE=`RECAP MODE IS ON. The DM is not playing right now: they are na
 `;
 async function processChunk(force){
   if(busy)return;
-  const id=S.core.active,T=ltOf(id),end=T.transcript.length,lines=T.transcript.slice(T.processed,end);
+  const id=S.core.active,T=ltOf(id);
+  // the on-device model takes smaller bites; anything left over is read straight after
+  const cap=isFree()?3500:60000;let end=T.processed,chars=0;
+  while(end<T.transcript.length&&(chars+=T.transcript[end].x.length+8)<=cap)end++;
+  if(end===T.processed&&end<T.transcript.length)end++;
+  const more=end<T.transcript.length,lines=T.transcript.slice(T.processed,end);
   if(!lines.length){if(force)toastMsg("Nothing new to check");nextCheck=Date.now()+SETL.interval*60000;return}
-  if(!SETL.apiKey){if(force)toastMsg("Add your Anthropic API key in Live setup to turn on the AI");return}
+  if(!aiReady()){if(force)toastMsg(aiMissing());return}
+  lastCheckAt=Date.now();
   busy=true;const st=document.getElementById("dlAiSt");if(st)st.innerHTML=aiStatus();
   const ctx=T.transcript.slice(Math.max(0,T.processed-8),T.processed).map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n");
   const user=`${stateText()}\n\nEARLIER TRANSCRIPT (already processed, context only, do NOT re-apply):\n${ctx||"(start of session)"}\n\nNEW TRANSCRIPT CHUNK (process this):\n${lines.map(l=>`[${hhmm(l.t)}] ${l.x}`).join("\n")}`;
   const sys=(DL().recap?RECAP_NOTE:"")+SYS_LIVE.replace("SURVIVAL_LINE",DL().survival?`{"type":"survival","target":"Hero","stat":"food|water|warmth|sleep","amount":-1,"reason":"..."}   scale 0-5, 5 = fine`:"");
   try{
-    const out=parseJSON(await askClaude(sys,user,3000));
+    const out=parseJSON(await askAI(sys,user,3000,LIVE_SCHEMA));
     if(S.core.active!==id)throw new Error("Campaign changed while the AI was reading");
     const list=[];
     for(const c of (out.changes||[])){try{list.push(applyChange(c))}catch(err){console.warn(err)}}
@@ -2485,7 +2550,7 @@ async function processChunk(force){
     pushFeed(list);dlSave();remoteTick=true;render();
     if(force&&!list.filter(Boolean).length)toastMsg("Checked: no changes found");
   }catch(err){fails++;toastMsg("AI check failed: "+err.message)}
-  finally{busy=false;nextCheck=Date.now()+SETL.interval*60000*Math.min(4,2**fails);const s2=document.getElementById("dlAiSt");if(s2)s2.innerHTML=aiStatus()}
+  finally{busy=false;nextCheck=fails?Date.now()+SETL.interval*60000*Math.min(4,2**fails):more?Date.now()+2000:Date.now()+SETL.interval*60000;const s2=document.getElementById("dlAiSt");if(s2)s2.innerHTML=aiStatus()}
 }
 async function endSession(btn){
   const id=S.core.active,T=ltOf(id),L=DL(),meta=activeMeta();
@@ -2495,13 +2560,13 @@ async function endSession(btn){
   btn.disabled=true;btn.innerHTML=`<span class="dl-spin"></span>Wrapping up…`;
   let sum=null;
   try{
-    if(SETL.apiKey){
-      if(T.processed<T.transcript.length)await processChunk(false);
+    if(aiReady()){
+      for(let i=0;i<40&&T.processed<T.transcript.length;i++){const before=T.processed;await processChunk(false);if(T.processed===before)break}
       const evs=L.timeline.filter(e=>e.session===L.sessionNo).map(e=>`- [${e.type}] ${e.title}: ${e.detail}${e.monsters&&e.monsters.length?" (monsters: "+e.monsters.map(m=>m.name+" x"+m.count).join(", ")+")":""}`).join("\n");
-      let tx=T.transcript.map(l=>l.x).join("\n");if(tx.length>300000)tx=tx.slice(0,120000)+"\n…\n"+tx.slice(-180000);
+      let tx=T.transcript.map(l=>l.x).join("\n");if(isFree())tx=tx.length>3000?"…"+tx.slice(-3000):tx;else if(tx.length>300000)tx=tx.slice(0,120000)+"\n…\n"+tx.slice(-180000);
       const prev=L.journey.filter(j=>j.session<L.sessionNo).slice(-2).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
-      const out=parseJSON(await askClaude('You write session recaps for a Dungeons & Dragons Dungeon Master in UK English. Use the events list and the error-prone, unlabelled speech-to-text transcript. Past tense, story style but factual, naming characters, NPCs, places, monsters fought and key loot. Return ONLY JSON: {"title":"evocative 3-6 word title","summary":"3-6 short paragraphs"}',
-        `${stateText()}\n\nPREVIOUS SESSIONS:\n${prev||"(none)"}\n\nEVENTS THIS SESSION:\n${evs||"(none logged)"}\n\nTRANSCRIPT:\n${tx||"(none)"}`,2500));
+      const out=parseJSON(await askAI('You write session recaps for a Dungeons & Dragons Dungeon Master in UK English. Use the events list and the error-prone, unlabelled speech-to-text transcript. Past tense, story style but factual, naming characters, NPCs, places, monsters fought and key loot. Return ONLY JSON: {"title":"evocative 3-6 word title","summary":"3-6 short paragraphs"}',
+        `${stateText()}\n\nPREVIOUS SESSIONS:\n${prev||"(none)"}\n\nEVENTS THIS SESSION:\n${evs||"(none logged)"}\n\nTRANSCRIPT${isFree()?" (last part only)":""}:\n${tx||"(none)"}`,2500,SUM_SCHEMA));
       sum={title:out.title||"Session "+L.sessionNo,summary:out.summary||""};
     }
   }catch(err){toastMsg("Couldn't write the summary automatically: "+err.message)}
@@ -2515,8 +2580,9 @@ async function endSession(btn){
 async function writeStory(){
   const L=DL();if(!L.journey.length){toastMsg("End at least one session first");return}
   const b=document.getElementById("dlStoryBtn");if(b){b.disabled=true;b.innerHTML=`<span class="dl-spin"></span>Writing…`}
-  try{const all=L.journey.slice().sort((a,c)=>a.session-c.session).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
-    L.story=(await askClaude('You write a "story so far" recap for a Dungeons & Dragons campaign in UK English, to be read aloud at the start of the next session. 2-4 paragraphs, vivid but accurate, past tense, ending on where the party is now and what lies ahead. Plain text only.',
+  try{let all=L.journey.slice().sort((a,c)=>a.session-c.session).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
+    if(isFree()&&all.length>5000)all="…"+all.slice(-5000);
+    L.story=(await askAI('You write a "story so far" recap for a Dungeons & Dragons campaign in UK English, to be read aloud at the start of the next session. 2-4 paragraphs, vivid but accurate, past tense, ending on where the party is now and what lies ahead. Plain text only.',
       `Campaign: ${activeMeta().name}\nParty: ${dmCamp().players.map(p=>p.name+" ("+[p.race,p.cls].filter(Boolean).join(" ")+")").join(", ")}\n\n${all}`,1500)).trim();
     dlSave();render();
   }catch(err){toastMsg(err.message);if(b){b.disabled=false;b.textContent='✨ Write "story so far"'}}
@@ -2558,7 +2624,9 @@ function dlClick(act,b){
     case "dlStory":writeStory();return true;
     case "dlSurv":{const p=dmCamp().players.find(x=>x.id===b.dataset.id),L=DL();if(!p)return true;const s=L.surv[p.id]=Object.assign({food:5,water:5,warmth:5,sleep:5},L.surv[p.id]);s[b.dataset.k]=+b.dataset.v;dlSave();render();return true}
     case "dlTest":{const o=document.getElementById("dlTestOut");o.innerHTML=`<span class="dl-spin"></span>Testing…`;
-      askClaude("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
+      if(!aiReady()){o.textContent="❌ "+aiMissing();return true}
+      askAI("Reply with the single word: ready","Are you there?",20).then(t=>{o.textContent="✅ Working ("+t.trim().slice(0,30)+")"}).catch(e=>{o.textContent="❌ "+e.message});return true}
+    case "dlNanoSetup":setupNano(false);return true;
     case "dlExport":{const L=DL(),meta=activeMeta();download(`${meta.name} DM Live notes ${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({tkLive:1,campaign:meta.code,live:L},null,1),"application/json");return true}
     case "dlImport":{const f=document.getElementById("dlImportF");f.onchange=async()=>{const file=f.files[0];if(!file)return;
       try{const d=JSON.parse(await file.text()),src=d.live||d.state;if(!src||!Array.isArray(src.timeline))throw new Error("Not a DM Live notes file");
