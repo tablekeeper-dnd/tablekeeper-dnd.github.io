@@ -1220,12 +1220,13 @@ function spellsOf(p){if(!p.spells||!Array.isArray(p.spells.c))p.spells={c:[],s:[
 function spellBlock(p){
   const r=spellRules(p),sp=spellsOf(p),c=sp.c.filter(Boolean),s=sp.s.filter(Boolean);
   if(!r.caster&&!c.length&&!s.length)return "";
-  const by={};s.forEach(n=>{const l=SPELL_LV[n]??1;(by[l]=by[l]||[]).push(n)});
+  const by={},own=[];s.forEach(n=>{const l=SPELL_LV[n];if(l==null){own.push(n);return}(by[l]=by[l]||[]).push(n)});
   const cnt=(have,want)=>`<b class="${have<want?"short":""}">${have}/${want}</b>`;
   return `<div class="spells"><div class="items-h"><span class="lbl">Spells</span><button class="linkbtn" data-act="spells" data-id="${p.id}">Edit spells</button></div>
     ${r.caster?`<div class="count">Cantrips ${cnt(c.length,r.cantrips)} · Spells ${r.kind} ${cnt(s.length,r.spells)}</div>`:""}
     ${c.length?`<div class="sp-l"><span>Cantrip</span><span>${c.map(esc).join(", ")}</span></div>`:""}
     ${Object.keys(by).sort((a,b)=>a-b).map(l=>`<div class="sp-l"><span>${ORD[l-1]}</span><span>${by[l].map(esc).join(", ")}</span></div>`).join("")}
+    ${own.length?`<div class="sp-l"><span>Homebrew</span><span>${own.map(esc).join(", ")}</span></div>`:""}
     ${!c.length&&!s.length?`<p class="none" style="margin:0;color:var(--faint);font-style:italic;font-size:.88rem">No spells chosen yet</p>`:""}</div>`;
 }
 function spellOptions(r,cantrip,cur){
@@ -1234,6 +1235,7 @@ function spellOptions(r,cantrip,cur){
   let h=`<option value="">${cantrip?"Choose a cantrip…":"Choose a spell…"}</option>`;
   if(cur&&!pool.some(s=>s.n===cur))h+=`<option selected>${esc(cur)}</option>`;
   Object.keys(groups).sort((a,b)=>a-b).forEach(l=>{h+=`<optgroup label="${LVNAME(+l)}">`+groups[l].map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")+`</optgroup>`});
+  h+=`<optgroup label="Homebrew"><option value="__own">✏️ Add your own ${cantrip?"cantrip":"spell"}…</option></optgroup>`;
   return h;
 }
 function spellSheet(p){
@@ -1248,7 +1250,17 @@ function spellSheet(p){
     <div class="f"><span class="lbl">Cantrips</span><div class="picks">${list(sp.c,"c",true)}</div><button type="button" class="linkbtn" data-spadd="c" style="align-self:flex-start">+ Add cantrip</button></div>
     <div class="f"><span class="lbl">Spells ${r.kind}</span><div class="picks">${list(sp.s,"s",false)}</div><button type="button" class="linkbtn" data-spadd="s" style="align-self:flex-start">+ Add spell</button></div>
     <div class="foot"><span></span><button class="btn gold" data-x="done">Done</button></div></div>`,b=>{
-    b.querySelectorAll("[data-sp]").forEach(x=>x.onchange=()=>{sp[x.dataset.sp][+x.dataset.i]=x.value;commit(keyFor(p.id))});
+    b.querySelectorAll("[data-sp]").forEach(x=>x.onchange=()=>{
+      if(x.value==="__own"){
+        // swap the dropdown for a box to type their own cantrip or spell
+        const key=x.dataset.sp,i=+x.dataset.i,was=sp[key][i]||"",cantrip=key==="c";
+        const box=document.createElement("input");box.type="text";box.className="plain";box.maxLength=60;box.value="";
+        box.placeholder=cantrip?"Your cantrip's name, e.g. Ember Flick":"Your spell's name, e.g. Shadow Lash";box.setAttribute("aria-label",cantrip?"Your own cantrip":"Your own spell");
+        const save=()=>{const v=box.value.trim();sp[key][i]=v||was;commit(keyFor(p.id));spellSheet(p)};
+        box.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();save()}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();spellSheet(p)}};
+        box.onblur=save;x.replaceWith(box);box.focus();return;
+      }
+      sp[x.dataset.sp][+x.dataset.i]=x.value;commit(keyFor(p.id))});
     b.querySelectorAll("[data-sprm]").forEach(x=>x.onclick=()=>{sp[x.dataset.sprm].splice(+x.dataset.i,1);commit(keyFor(p.id));spellSheet(p)});
     b.querySelectorAll("[data-spadd]").forEach(x=>x.onclick=()=>{sp[x.dataset.spadd].push("");spellSheet(p)});
     b.querySelector('[data-x="done"]').onclick=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean);commit(keyFor(p.id));closeSheet()};
