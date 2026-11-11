@@ -2566,7 +2566,7 @@ async function endSession(btn){
       const evs=L.timeline.filter(e=>e.session===L.sessionNo).map(e=>`- [${e.type}] ${e.title}: ${e.detail}${e.monsters&&e.monsters.length?" (monsters: "+e.monsters.map(m=>m.name+" x"+m.count).join(", ")+")":""}`).join("\n");
       let tx=T.transcript.map(l=>l.x).join("\n");if(isFree())tx=tx.length>3000?"…"+tx.slice(-3000):tx;else if(tx.length>300000)tx=tx.slice(0,120000)+"\n…\n"+tx.slice(-180000);
       const prev=L.journey.filter(j=>j.session<L.sessionNo).slice(-2).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
-      const out=parseJSON(await askAI('You write session recaps for a Dungeons & Dragons Dungeon Master in UK English. Use the events list and the error-prone, unlabelled speech-to-text transcript. Past tense, story style but factual, naming characters, NPCs, places, monsters fought and key loot. Return ONLY JSON: {"title":"evocative 3-6 word title","summary":"3-6 short paragraphs"}',
+      const out=parseJSON(await askAI('You write session recaps for a Dungeons & Dragons Dungeon Master in UK English. Use the events list and the error-prone, unlabelled speech-to-text transcript. Be concise: ONE short paragraph of 3 to 5 sentences, under 90 words, past tense, covering only the key moments (places reached, NPCs met, fights won or lost, important loot). No flowery description. Return ONLY JSON: {"title":"evocative 3-6 word title","summary":"one short paragraph, under 90 words"}',
         `${stateText()}\n\nPREVIOUS SESSIONS:\n${prev||"(none)"}\n\nEVENTS THIS SESSION:\n${evs||"(none logged)"}\n\nTRANSCRIPT${isFree()?" (last part only)":""}:\n${tx||"(none)"}`,2500,SUM_SCHEMA));
       sum={title:out.title||"Session "+L.sessionNo,summary:out.summary||""};
     }
@@ -2583,7 +2583,7 @@ async function writeStory(){
   const b=document.getElementById("dlStoryBtn");if(b){b.disabled=true;b.innerHTML=`<span class="dl-spin"></span>Writing…`}
   try{let all=L.journey.slice().sort((a,c)=>a.session-c.session).map(j=>`Session ${j.session}: ${j.title}\n${j.summary}`).join("\n\n");
     if(isFree()&&all.length>5000)all="…"+all.slice(-5000);
-    L.story=(await askAI('You write a "story so far" recap for a Dungeons & Dragons campaign in UK English, to be read aloud at the start of the next session. 2-4 paragraphs, vivid but accurate, past tense, ending on where the party is now and what lies ahead. Plain text only.',
+    L.story=(await askAI('You write a "story so far" recap for a Dungeons & Dragons campaign in UK English, to be read aloud at the start of the next session. Be concise: one paragraph, under 120 words, vivid but accurate, covering only the biggest moments and ending on where the party is now and what lies ahead. Plain text only.',
       `Campaign: ${activeMeta().name}\nParty: ${dmCamp().players.map(p=>p.name+" ("+[p.race,p.cls].filter(Boolean).join(" ")+")").join(", ")}\n\n${all}`,1500)).trim();
     dlSave();render();
   }catch(err){toastMsg(err.message);if(b){b.disabled=false;b.textContent='✨ Write "story so far"'}}
