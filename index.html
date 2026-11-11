@@ -259,6 +259,7 @@ body.in-combat{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .banner-acts{display:flex;gap:12px;flex:none}
 .banner b{color:var(--ink)}
 .join-add{display:flex;gap:8px;flex-wrap:wrap;max-width:720px;margin-inline:auto}
+.sp-adds{display:flex;gap:16px;flex-wrap:wrap}
 .claim{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-width:720px;margin-inline:auto}
 .claim .tog[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
 .code-big{font-size:2.6rem;letter-spacing:.24em;text-align:center;color:var(--brass);background:var(--bg);border:1px dashed var(--brass);border-radius:12px;padding:14px 8px;user-select:all}
@@ -1238,7 +1239,7 @@ function spellOptions(r,cantrip,cur){
   h+=`<optgroup label="Homebrew"><option value="__own">✏️ Add your own ${cantrip?"cantrip":"spell"}…</option></optgroup>`;
   return h;
 }
-function spellSheet(p){
+function spellSheet(p,openOwn){
   const r=spellRules(p),sp=spellsOf(p);
   while(sp.c.length<r.cantrips)sp.c.push("");
   while(sp.s.length<r.spells)sp.s.push("");
@@ -1247,20 +1248,22 @@ function spellSheet(p){
     :`${p.cls?esc(p.cls)+"s don't":"This character doesn't"} cast spells by default. Add spells here for subclasses like Eldritch Knight or Arcane Trickster, or from feats.`;
   openSheet(`<h2>${esc(p.name)}: spells</h2><div class="stack">
     <p class="hint" style="margin:0;color:var(--muted)">${intro}</p>
-    <div class="f"><span class="lbl">Cantrips</span><div class="picks">${list(sp.c,"c",true)}</div><button type="button" class="linkbtn" data-spadd="c" style="align-self:flex-start">+ Add cantrip</button></div>
-    <div class="f"><span class="lbl">Spells ${r.kind}</span><div class="picks">${list(sp.s,"s",false)}</div><button type="button" class="linkbtn" data-spadd="s" style="align-self:flex-start">+ Add spell</button></div>
+    <div class="f"><span class="lbl">Cantrips</span><div class="picks">${list(sp.c,"c",true)}</div><div class="sp-adds"><button type="button" class="linkbtn" data-spadd="c">+ Add cantrip</button><button type="button" class="linkbtn" data-spown="c">✏️ Write your own cantrip</button></div></div>
+    <div class="f"><span class="lbl">Spells ${r.kind}</span><div class="picks">${list(sp.s,"s",false)}</div><div class="sp-adds"><button type="button" class="linkbtn" data-spadd="s">+ Add spell</button><button type="button" class="linkbtn" data-spown="s">✏️ Write your own spell</button></div></div>
     <div class="foot"><span></span><button class="btn gold" data-x="done">Done</button></div></div>`,b=>{
-    b.querySelectorAll("[data-sp]").forEach(x=>x.onchange=()=>{
-      if(x.value==="__own"){
+    const makeOwn=x=>{
         // swap the dropdown for a box to type their own cantrip or spell
         const key=x.dataset.sp,i=+x.dataset.i,was=sp[key][i]||"",cantrip=key==="c";
         const box=document.createElement("input");box.type="text";box.className="plain";box.maxLength=60;box.value="";
         box.placeholder=cantrip?"Your cantrip's name, e.g. Ember Flick":"Your spell's name, e.g. Shadow Lash";box.setAttribute("aria-label",cantrip?"Your own cantrip":"Your own spell");
         const save=()=>{const v=box.value.trim();sp[key][i]=v||was;commit(keyFor(p.id));spellSheet(p)};
         box.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();save()}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();spellSheet(p)}};
-        box.onblur=save;x.replaceWith(box);box.focus();return;
-      }
+        box.onblur=save;x.replaceWith(box);box.focus();};
+    b.querySelectorAll("[data-sp]").forEach(x=>x.onchange=()=>{
+      if(x.value==="__own")return makeOwn(x);
       sp[x.dataset.sp][+x.dataset.i]=x.value;commit(keyFor(p.id))});
+    b.querySelectorAll("[data-spown]").forEach(x=>x.onclick=()=>{const k=x.dataset.spown;let i=sp[k].indexOf("");if(i<0){sp[k].push("");i=sp[k].length-1}spellSheet(p,{key:k,i})});
+    if(openOwn){const sel=b.querySelector(`#sp-${openOwn.key}-${openOwn.i}`);if(sel)setTimeout(()=>makeOwn(sel),50)}
     b.querySelectorAll("[data-sprm]").forEach(x=>x.onclick=()=>{sp[x.dataset.sprm].splice(+x.dataset.i,1);commit(keyFor(p.id));spellSheet(p)});
     b.querySelectorAll("[data-spadd]").forEach(x=>x.onclick=()=>{sp[x.dataset.spadd].push("");spellSheet(p)});
     b.querySelector('[data-x="done"]').onclick=()=>{sp.c=sp.c.filter(Boolean);sp.s=sp.s.filter(Boolean);commit(keyFor(p.id));closeSheet()};
